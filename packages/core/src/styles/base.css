@@ -1,15 +1,80 @@
 /* ==========================================================================
-   Base layer: reset scoped to the widget, focus, reduced motion.
-
-   Filled in over Iteration 5.
+   Base layer: scoped resets, utilities and the reduced-motion kill switch.
+   Nothing here reaches outside `.sn-root`.
    ========================================================================== */
 
-.sn-root {
-  box-sizing: border-box;
-}
-
+.sn-root,
 .sn-root *,
 .sn-root *::before,
 .sn-root *::after {
-  box-sizing: inherit;
+  box-sizing: border-box;
+}
+
+.sn-root {
+  font-family: var(--sn-font-family);
+  font-size: var(--sn-font-size);
+  line-height: 1.45;
+  color: var(--sn-text);
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Controls ----------------------------------------------------------------- */
+
+.sn-root button {
+  font: inherit;
+  color: inherit;
+}
+
+/* Focus -------------------------------------------------------------------- */
+
+.sn-root :focus {
+  outline: none;
+}
+
+.sn-root :focus-visible {
+  outline: 2px solid var(--sn-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--sn-radius-control);
+}
+
+/* Utilities ---------------------------------------------------------------- */
+
+.sn-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sn-spinner {
+  animation: sn-spin 900ms linear infinite;
+}
+
+@keyframes sn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Accessibility: honour the OS setting ------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .sn-root *,
+  .sn-root *::before,
+  .sn-root *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }

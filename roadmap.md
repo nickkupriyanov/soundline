@@ -241,24 +241,30 @@ soundline/
 
 ---
 
-### Iteration 5 — DOM-подпуть и стили
+### Iteration 5 — DOM-подпуть и стили · ✅ готово
 
 **Цель:** утилиты для фокуса/размеров и полный слой токенов.
 
 Задачи:
 
-- [ ] `dom/*`: перенос `focus.ts`, `media.ts`, `size.ts`, `height.ts`, `visibility.ts`,
+- [x] `dom/*`: перенос `focus.ts`, `media.ts`, `size.ts`, `height.ts`, `visibility.ts`,
       `index.ts` + тесты и `import.test.ts` (импорт не трогает `window`).
-- [ ] `styles/tokens.css`: Shape, Type, Motion, Surfaces, Text, Lines, Feedback, Accent,
+- [x] `styles/tokens.css`: Shape, Type, Motion, Surfaces, Text, Lines, Feedback, Accent,
       плюс плеерные токены (`--sn-width`, `--sn-artwork-radius`, `--sn-seek-height`,
       `--sn-seek-fill`, `--sn-queue-max-height`), dark + `[data-sn-theme='light']`.
-- [ ] `styles/base.css`: reset-скоуп, `:focus-visible`, visually-hidden, reduced-motion.
-- [ ] `styles/soundline.css`: карточка, now playing, транспорт, seek (трек/заливка/ручка),
+- [x] `styles/base.css`: reset-скоуп, `:focus-visible`, visually-hidden, reduced-motion.
+- [x] `styles/soundline.css`: карточка, now playing, транспорт, seek (трек/заливка/ручка),
       volume, очередь/элемент трека, состояния loading/empty/error, `data-sn-layout`.
-- [ ] `scripts/postbuild.mjs` собирает `index.css` в `soundline.css` и копирует в оба тарбола.
-- [ ] Тест: `styles.test.ts` — все токены, упомянутые в README, существуют в `tokens.css`.
+- [x] `scripts/postbuild.mjs` собирает `index.css` в `soundline.css` и копирует в оба тарбола.
+- [x] Тест: `styles.test.ts` — все токены, упомянутые в README, существуют в `tokens.css`.
 
-**Готово, когда:** CSS собирается, токены задокументированы, тема переключается атрибутом.
+Минимально необходимое сверх списка (отмечено в отчёте): `observeVisibilityChange`
+сообщает оба направления и появился `isDocumentHidden()` (нужно `pauseWhenHidden` в 6/12);
+токен `--sn-width-compact` для компоновки `compact`; `@types/node` + `types: [..., "node"]`
+в core ради чтения файлов в `styles.test.ts`; короткий раздел Theming в README, чтобы
+проверка токенов была не пустой; CSS-хук `data-sn-dragging` для перетаскивания seek.
+
+**Готово, когда:** CSS собирается, токены задокументированы, тема переключается атрибутом. → выполнено.
 
 ---
 

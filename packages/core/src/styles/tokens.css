@@ -7,7 +7,8 @@
 
      .sn-root { --sn-accent: #ff215a; --sn-surface: #101018; }
 
-   The full token set lands in Iteration 5; this is the seed it grows from.
+   The light theme is the same set under `[data-sn-theme='light']`, which the
+   React binding puts on the root from the resolved theme.
    ========================================================================== */
 
 .sn-root {
@@ -17,8 +18,26 @@
   --sn-radius-control: 14px;
   --sn-radius-pill: 999px;
   --sn-artwork-radius: 18px;
+
+  /* Player ----------------------------------------------------------------- */
+  /*
+   * Width. It is a hard width, not a hint: the layout renders at exactly this
+   * size, or at 100% of a narrower parent. `card` is the full player, `compact`
+   * the single-column one.
+   */
+  --sn-width: 380px;
+  --sn-width-compact: 300px;
   /* How many tracks are visible before the queue scrolls. */
   --sn-queue-max-height: 320px;
+  /* The track and its handle: the whole bar, then the filled part. */
+  --sn-seek-height: 6px;
+  --sn-seek-fill: var(--sn-accent);
+
+  /* Type ------------------------------------------------------------------- */
+  --sn-font-family:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif;
+  --sn-font-size: 14px;
 
   /* Motion ----------------------------------------------------------------- */
   --sn-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
@@ -30,16 +49,86 @@
   /* Palette: dark (default) ------------------------------------------------ */
   color-scheme: dark;
 
+  /* Surfaces */
   --sn-surface: #141419;
   --sn-surface-raised: #1d1d25;
   --sn-panel: #1b1b22;
+  --sn-control: #23232c;
+  --sn-control-hover: #2c2c37;
 
+  /* Text */
   --sn-text: #f4f4f6;
   --sn-text-muted: #a2a2b0;
+  --sn-text-subtle: #71717f;
+  --sn-ink: #f4f4f6;
+  --sn-ink-contrast: #16161a;
 
+  /* Lines */
+  --sn-border: rgba(255, 255, 255, 0.07);
+  --sn-border-strong: rgba(255, 255, 255, 0.14);
+  --sn-focus-ring: rgba(255, 33, 90, 0.6);
+
+  /* Accent */
   --sn-accent: #ff215a;
   --sn-accent-hover: #ff4271;
+  --sn-accent-press: #e30f49;
+  --sn-accent-contrast: #ffffff;
+  --sn-accent-ink: #ff6b90;
   --sn-accent-soft: rgba(255, 33, 90, 0.16);
+  --sn-accent-soft-strong: rgba(255, 33, 90, 0.28);
+  --sn-accent-glow: rgba(255, 33, 90, 0.45);
 
-  --sn-border: rgba(255, 255, 255, 0.07);
+  /* Feedback */
+  --sn-danger: #ff6178;
+  --sn-danger-ink: #ffc2cb;
+  --sn-danger-soft: rgba(255, 97, 120, 0.14);
+
+  /* Loading */
+  --sn-skeleton-base: rgba(255, 255, 255, 0.05);
+  --sn-skeleton-shine: rgba(255, 255, 255, 0.12);
+
+  --sn-shadow-card:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 32px 64px -32px rgba(0, 0, 0, 0.9),
+    0 8px 24px -16px rgba(0, 0, 0, 0.7);
+}
+
+/* Palette: light ----------------------------------------------------------- */
+
+.sn-root[data-sn-theme='light'] {
+  color-scheme: light;
+
+  --sn-surface: #f4f4f5;
+  --sn-surface-raised: #ffffff;
+  --sn-panel: #ffffff;
+  --sn-control: #f4f4f6;
+  --sn-control-hover: #ececef;
+
+  --sn-text: #171719;
+  --sn-text-muted: #7e7e8a;
+  --sn-text-subtle: #adadb8;
+  --sn-ink: #171719;
+  --sn-ink-contrast: #ffffff;
+
+  --sn-border: rgba(23, 23, 25, 0.07);
+  --sn-border-strong: rgba(23, 23, 25, 0.14);
+  --sn-focus-ring: rgba(255, 33, 90, 0.45);
+
+  --sn-accent: #ff215a;
+  --sn-accent-hover: #f5114e;
+  --sn-accent-press: #d80c43;
+  --sn-accent-contrast: #ffffff;
+  --sn-accent-ink: #c2144a;
+  --sn-accent-soft: #fee5e6;
+  --sn-accent-soft-strong: #fbd2d5;
+  --sn-accent-glow: rgba(255, 33, 90, 0.35);
+
+  --sn-danger: #e0243f;
+  --sn-danger-ink: #a3102a;
+  --sn-danger-soft: #fde8ec;
+
+  --sn-skeleton-base: rgba(23, 23, 25, 0.06);
+  --sn-skeleton-shine: rgba(23, 23, 25, 0.12);
+
+  --sn-shadow-card:
+    0 32px 64px -40px rgba(23, 23, 25, 0.35), 0 6px 20px -12px rgba(23, 23, 25, 0.12);
 }

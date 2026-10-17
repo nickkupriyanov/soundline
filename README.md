@@ -34,6 +34,25 @@ The flow, the helpers, the copy, the class names and the stylesheet live in
 separately so another binding can reuse it. The React package depends on it, so you
 normally never install it by hand.
 
+## Theming
+
+The stylesheet is one file of plain CSS custom properties — no Tailwind, no CSS-in-JS,
+no build step:
+
+```css
+.sn-root {
+  --sn-width: 420px;
+  --sn-accent: #7c5cff;
+  --sn-surface: #101018;
+}
+```
+
+The player tokens are `--sn-width`, `--sn-width-compact`, `--sn-artwork-radius`,
+`--sn-seek-height`, `--sn-seek-fill` and `--sn-queue-max-height`; the palette is
+`--sn-surface`/`--sn-panel`/`--sn-control`, `--sn-text`/`--sn-text-muted`,
+`--sn-accent` and `--sn-border`. The light theme is the same set under
+`[data-sn-theme='light']`, which the widget sets from the resolved theme.
+
 ## Development
 
 ```bash
