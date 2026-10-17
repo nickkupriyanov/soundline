@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode } from 'react';
 import type {
   EngineState,
   LoopMode,
@@ -163,15 +163,37 @@ export type SoundlineProviderProps<TData = unknown> = SoundlineProps<TData> & {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Animation primitives the widget renders through. The default kit is pure CSS;
- * `@nickkupriyanov/soundline-react/motion` swaps in spring-based variants.
+ * Animation primitives the widget renders through.
+ *
+ * The markup stays the library's — the three primitives are the only thing a kit
+ * replaces, so the widget's DOM, its accessibility contract and its classes are
+ * the same whichever kit is in use. The default kit is pure CSS and ships in the
+ * main entry point; `@nickkupriyanov/soundline-react/motion` swaps in
+ * spring-based variants and is the only entry point that pulls `motion` in.
+ *
+ * A custom kit is expected to keep three promises:
+ *
+ * - render the same class hooks (`sn-step-host`/`sn-step`, `sn-stagger-item`,
+ *   `sn-height`/`sn-height-inner`), so the stylesheet keeps working;
+ * - keep `Item` the row element itself and forward its `ref` — the queue moves
+ *   focus through it;
+ * - honour reduced motion, unless it is the CSS kit, which the stylesheet's kill
+ *   switch already covers.
  */
 export interface AnimationKit {
-  /** Rendered once and kept mounted; animates its child on every `stepKey` change. */
+  /**
+   * Rendered once and kept mounted; animates its child on every `stepKey`
+   * change. The children of two different steps may overlap — they share one box
+   * — so the surrounding layout never jumps mid-transition.
+   */
   StepHost: (props: StepHostProps) => ReactNode;
-  /** A `<button>` that joins a stagger group; used for the queue rows. */
+  /** The row element of a stagger group; the queue renders its rows through it. */
   Item: (props: ItemProps) => ReactNode;
-  /** Animated container used to follow its content height. */
+  /**
+   * Container that follows the height of the content it holds. Measuring is the
+   * binding's half (the stylesheet reads the class hooks); the kit only decides
+   * how the change is carried out.
+   */
   Height: (props: HeightProps) => ReactNode;
 }
 
@@ -184,8 +206,13 @@ export interface StepHostProps {
   children: ReactNode;
 }
 
-export interface ItemProps extends ComponentPropsWithoutRef<'button'> {
-  /** Position inside the group; drives the delay. */
+/**
+ * The props of a staggered row: the prepared slot props of `TrackItem` plus the
+ * row's position in the group. `ref` is part of the contract — it is how the
+ * queue moves focus along the list.
+ */
+export interface ItemProps extends ComponentPropsWithRef<'li'> {
+  /** Zero-based position inside the group; drives the delay. */
   index: number;
 }
 

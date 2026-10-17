@@ -52,6 +52,8 @@ export const SN_CLASS: Record<SnClassSlot, string> = {
   trackItem: 'sn-track-item',
   trackItemActive: 'sn-track-item-active',
   trackItemPlaying: 'sn-track-item-playing',
+  trackLine: 'sn-track-line',
+  eq: 'sn-eq',
   trackTitle: 'sn-track-title',
   trackArtist: 'sn-track-artist',
   trackRemove: 'sn-track-remove',

@@ -27,6 +27,9 @@
    */
   --sn-width: 380px;
   --sn-width-compact: 300px;
+  /* The vertical rhythm of the card: the gap between its blocks, reused by the
+     wrapper the height animation adds. */
+  --sn-card-gap: 12px;
   /* How many tracks are visible before the queue scrolls. */
   --sn-queue-max-height: 320px;
   /* The track and its handle: the whole bar, then the filled part. */

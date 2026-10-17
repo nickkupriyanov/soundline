@@ -20,6 +20,7 @@ function read(relativePath: string): string {
 const tokensCss = read('tokens.css');
 const baseCss = read('base.css');
 const soundlineCss = read('soundline.css');
+const animationsCss = read('animations.css');
 const indexCss = read('index.css');
 
 const READMES = [resolve(repoRoot, 'README.md'), resolve(packageRoot, 'README.md')];
@@ -32,10 +33,17 @@ function definedTokens(): Set<string> {
 }
 
 /**
- * Vars the component layer owns itself, next to the token that feeds them: the
- * `data-sn-layout` widths and the volume fill, which a binding writes inline.
+ * Vars the component layers own themselves, next to the token that feeds them:
+ * the `data-sn-layout` widths and the volume fill, which a binding writes inline,
+ * and the two hooks the animation kits write inline — the stagger delay and the
+ * direction the artwork steps in from.
  */
-const LOCAL_VARS = new Set(['--sn-width-current', '--sn-volume-percent']);
+const LOCAL_VARS = new Set([
+  '--sn-width-current',
+  '--sn-volume-percent',
+  '--sn-index',
+  '--sn-step-shift',
+]);
 
 describe('design tokens', () => {
   it('defines the player tokens the layout reads', () => {
@@ -43,6 +51,7 @@ describe('design tokens', () => {
 
     expect(defined).toContain('--sn-width');
     expect(defined).toContain('--sn-width-compact');
+    expect(defined).toContain('--sn-card-gap');
     expect(defined).toContain('--sn-artwork-radius');
     expect(defined).toContain('--sn-seek-height');
     expect(defined).toContain('--sn-seek-fill');
@@ -52,7 +61,7 @@ describe('design tokens', () => {
   it('every var used by the component layer comes from the tokens', () => {
     const defined = definedTokens();
     const used = new Set(
-      [...`${baseCss}\n${soundlineCss}`.matchAll(/var\((--sn-[a-z0-9-]+)/g)].map(
+      [...`${baseCss}\n${soundlineCss}\n${animationsCss}`.matchAll(/var\((--sn-[a-z0-9-]+)/g)].map(
         (match) => match[1] as string,
       ),
     );
@@ -87,8 +96,9 @@ describe('design tokens', () => {
 
 describe('component layer', () => {
   it('styles every slot in SN_CLASS', () => {
+    const stylesheet = `${soundlineCss}\n${animationsCss}`;
     const missing = Object.values(SN_CLASS).filter(
-      (className) => !new RegExp(`\\.${className}(?![\\w-])`).test(soundlineCss),
+      (className) => !new RegExp(`\\.${className}(?![\\w-])`).test(stylesheet),
     );
 
     expect(missing).toEqual([]);
@@ -99,8 +109,31 @@ describe('component layer', () => {
     expect(baseCss).toContain('transition-duration: 1ms !important');
   });
 
-  it('concatenates the three authored files in order', () => {
+  it('concatenates the four authored files in order', () => {
     const imports = [...indexCss.matchAll(/@import\s+'\.\/([\w.-]+)'/g)].map((m) => m[1]);
-    expect(imports).toEqual(['tokens.css', 'base.css', 'soundline.css']);
+    expect(imports).toEqual(['tokens.css', 'base.css', 'soundline.css', 'animations.css']);
+  });
+});
+
+describe('animation layer', () => {
+  it('defines a rule for every hook the kits render', () => {
+    for (const hook of [
+      '.sn-step-host',
+      '.sn-step',
+      '.sn-stagger-item',
+      '.sn-height',
+      '.sn-height-inner',
+      '.sn-eq',
+    ]) {
+      expect(animationsCss, hook).toContain(`${hook} {`);
+    }
+  });
+
+  it('delays a staggered row by its index', () => {
+    expect(animationsCss).toContain('animation-delay: calc(var(--sn-index, 0) * 40ms)');
+  });
+
+  it('keeps the CSS keyframes away from the kit that animates itself', () => {
+    expect(animationsCss).toContain("[data-sn-motion='true']");
   });
 });

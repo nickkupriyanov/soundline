@@ -35,7 +35,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--sn-card-gap);
   width: 100%;
   min-height: 0;
   padding: 14px;
@@ -488,7 +488,15 @@
   color: var(--sn-accent-ink);
 }
 
+.sn-track-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .sn-track-title {
+  min-width: 0;
   overflow: hidden;
   font-size: 13.5px;
   white-space: nowrap;
@@ -503,8 +511,9 @@
   text-overflow: ellipsis;
 }
 
-/* The active row's own layout is a grid, so the two text lines stack. */
-.sn-track-item > .sn-track-title,
+/* The row is a grid, so the two text lines stack: the title line — the playing
+   bars and the title — and the artist underneath. */
+.sn-track-item > .sn-track-line,
 .sn-track-item > .sn-track-artist {
   grid-column: 1;
 }

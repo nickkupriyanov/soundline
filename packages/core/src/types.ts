@@ -265,6 +265,8 @@ export type SnClassSlot =
   | 'trackItem'
   | 'trackItemActive'
   | 'trackItemPlaying'
+  | 'trackLine'
+  | 'eq'
   | 'trackTitle'
   | 'trackArtist'
   | 'trackRemove'

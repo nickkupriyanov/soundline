@@ -1,0 +1,179 @@
+/* ==========================================================================
+   Animation layer: the hooks the animation kits render through and the two
+   effects that run on their own — the equalizer of the playing row and the
+   sweep across the filled playhead.
+
+   The kits own the markup, this file owns the look:
+     .sn-step-host / .sn-step        one step of content (the artwork), keyed by
+                                     the track: the child entering while the old
+                                     one leaves
+     .sn-stagger-item                a row of a stagger group, delayed by
+                                     `--sn-index` (written inline)
+     .sn-height / .sn-height-inner   a container that follows the height of what
+                                     it holds while it changes
+   The Motion kit (see `@nickkupriyanov/soundline-react/motion`) draws the same
+   classes and marks what it animates itself with `data-sn-motion='true'`, which
+   is what keeps the CSS keyframes out of its way.
+
+   Nothing here is required for the widget to work: without the CSS the player
+   renders and behaves exactly the same, it just does not move. Every animation
+   collapses under `prefers-reduced-motion: reduce` (the kill switch lives in
+   base.css).
+   ========================================================================== */
+
+/* Track change: the artwork ------------------------------------------------- */
+
+/*
+ * The host keeps its size while a step is in flight. Both the entering and the
+ * leaving child are placed in the same grid cell, so they overlap in a box the
+ * size of the artwork and the row never jumps mid-transition.
+ */
+.sn-step-host {
+  --sn-step-shift: 10px;
+  display: grid;
+  grid-template-areas: 'step';
+}
+
+/* Backwards slides in from the other side. */
+.sn-step-host[data-direction='back'] {
+  --sn-step-shift: -10px;
+}
+
+.sn-step {
+  grid-area: step;
+  animation: sn-step-in var(--sn-duration) var(--sn-ease-soft) both;
+}
+
+@keyframes sn-step-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--sn-step-shift)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The queue: the rows of a stagger group ----------------------------------- */
+
+/*
+ * `backwards` matters: a row that has not had its turn yet must be invisible
+ * rather than flash and then fade in.
+ */
+.sn-stagger-item {
+  animation: sn-stagger-in var(--sn-duration) var(--sn-ease-soft) backwards;
+  animation-delay: calc(var(--sn-index, 0) * 40ms);
+}
+
+@keyframes sn-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* A container that follows its content height ------------------------------ */
+
+/*
+ * The duration is written inline by the binding, so the moment this container
+ * stops clipping and the transition that carried the height can never drift
+ * apart. Only the timing function belongs to the stylesheet.
+ */
+.sn-height {
+  transition-property: height;
+  transition-timing-function: var(--sn-ease-soft);
+}
+
+/* The moment a binding clips content: without it the new height would show
+   through at once and the transition would be invisible. */
+.sn-height[data-sn-animating='true'] {
+  overflow: hidden;
+}
+
+/* The card's own rhythm, repeated inside: the wrapper adds a box, not a gap. */
+.sn-height-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sn-card-gap);
+  min-height: 0;
+}
+
+/* The Motion kit drives these elements itself. */
+.sn-step[data-sn-motion='true'],
+.sn-stagger-item[data-sn-motion='true'],
+.sn-height[data-sn-motion='true'] {
+  animation: none;
+  transition: none;
+}
+
+/* The playing row: the breathing bars -------------------------------------- */
+
+.sn-eq {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  gap: 2px;
+  width: 14px;
+  height: 14px;
+  /* Decorative: the row's label already says what is playing. */
+  pointer-events: none;
+  color: var(--sn-accent-ink);
+}
+
+.sn-eq > span {
+  flex: 1 1 auto;
+  height: 100%;
+  background: currentColor;
+  border-radius: 1px;
+  transform-origin: bottom;
+  animation: sn-eq-breathe 850ms var(--sn-ease-standard) infinite alternate;
+}
+
+/* Three bars of different lengths, out of phase with each other. */
+.sn-eq > span:nth-child(1) {
+  height: 70%;
+}
+
+.sn-eq > span:nth-child(2) {
+  height: 100%;
+  animation-delay: 140ms;
+}
+
+.sn-eq > span:nth-child(3) {
+  height: 55%;
+  animation-delay: 280ms;
+}
+
+@keyframes sn-eq-breathe {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* The playhead: the sweep across the filled part ---------------------------- */
+
+/* Only while the engine is playing, and only inside the fill. */
+.sn-root[data-sn-playing='true'] .sn-seek-fill {
+  overflow: hidden;
+}
+
+.sn-root[data-sn-playing='true'] .sn-seek-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: sn-sweep 2.4s var(--sn-ease-standard) infinite;
+}
+
+@keyframes sn-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}

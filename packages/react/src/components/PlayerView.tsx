@@ -1,17 +1,34 @@
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   DEFAULT_SEEK_STEP,
   DEFAULT_VOLUME_STEP,
   clamp,
   format,
   formatDuration,
+  type QueueItemView,
 } from '@nickkupriyanov/soundline-core';
-import { useClassNames, useComponents, usePlayerContext, useUI } from '../context';
+import { useAnimations, useClassNames, useComponents, usePlayerContext, useUI } from '../context';
 import { useSlider } from '../hooks/useSlider';
 import { QueueList } from './QueueList';
 import { TimeDisplay } from './TimeDisplay';
 
 type ViewState = 'loading' | 'empty' | 'error' | 'ready';
+
+/** The playing track's place in the playback order, or `null` when it is not there. */
+function positionOf(items: readonly QueueItemView[], trackId: string | null): number | null {
+  if (trackId === null) return null;
+  return items.find((item) => item.id === trackId)?.position ?? null;
+}
+
+/**
+ * Which way the queue moved: back only when it demonstrably did. The first
+ * selection, a reorder and a track that is not in the queue all step in from the
+ * right.
+ */
+function stepDirection(previousPosition: number | null, position: number | null): 1 | -1 {
+  if (previousPosition === null || position === null) return 1;
+  return position >= previousPosition ? 1 : -1;
+}
 
 function stateOf(view: { error: unknown; loading: boolean; empty: boolean }): ViewState {
   if (view.error) return 'error';
@@ -27,13 +44,16 @@ function stateOf(view: { error: unknown; loading: boolean; empty: boolean }): Vi
  * Every section is a part from `SoundlineComponents`, so an application may
  * replace any of them. What this view keeps is what a replacement must not have
  * to reproduce: the themed frame, the labelled region, the polite announcements,
- * focus management, and the two prepared slider bundles. The sliders' maths lives
+ * focus management, the two prepared slider bundles, and the three places where
+ * the animation kit steps in (the artwork, the states' height, and the playing
+ * flag the stylesheet reads). The sliders' maths lives
  * in the parts' own prepared props rather than in the parts.
  */
 export function PlayerView() {
   const { snapshot, actions } = usePlayerContext();
   const ui = useUI();
   const cls = useClassNames();
+  const { Height, StepHost } = useAnimations();
   const {
     Artwork,
     Empty,
@@ -54,6 +74,28 @@ export function PlayerView() {
 
   const trackId = view.nowPlaying?.trackId ?? null;
   const state = stateOf(view);
+
+  /* -- the step the artwork came in from ------------------------------------ */
+
+  // Which way the queue moved is worked out once per track change and then held
+  // for as long as that track shows. Recomputing it on every render would flip
+  // the step mid-flight: the engine reporting and the playhead moving both
+  // re-render the view while the transition is still running.
+  const [step, setStep] = useState<{
+    id: string | null;
+    direction: 1 | -1;
+    position: number | null;
+  }>(() => ({ id: trackId, direction: 1, position: null }));
+
+  const position = positionOf(view.queue.items, trackId);
+  if (step.id !== trackId || step.position !== position) {
+    const changed = step.id !== trackId;
+    setStep({
+      id: trackId,
+      direction: changed ? stepDirection(step.position, position) : step.direction,
+      position,
+    });
+  }
 
   /* -- the sliders, wired here so any part can render them ------------------ */
 
@@ -131,6 +173,7 @@ export function PlayerView() {
       data-sn-theme={ui.theme}
       data-sn-layout={ui.layout}
       data-sn-state={state}
+      data-sn-playing={view.transport.playing ? 'true' : 'false'}
       lang={ui.locale}
     >
       <div
@@ -140,79 +183,87 @@ export function PlayerView() {
         role="region"
         aria-label={ui.messages.playerLabel}
       >
-        {state === 'error' && view.error ? (
-          <ErrorState
-            title={ui.messages.errorLabel}
-            message={ui.messages.genericError}
-            retryLabel={ui.messages.retryLabel}
-            onRetry={view.actions.canRetry ? actions.retry : undefined}
-          />
-        ) : state === 'loading' ? (
-          <Loading label={ui.messages.loadingLabel} />
-        ) : state === 'empty' ? (
-          <Empty label={ui.messages.emptyLabel} />
-        ) : (
-          <>
-            {view.nowPlaying ? (
-              // Keyed by track: a change resets the artwork's "failed" state.
-              <NowPlaying
-                key={view.nowPlaying.trackId}
-                nowPlaying={view.nowPlaying}
-                slotProps={{ className: cls('nowPlaying') }}
-              >
-                <Artwork nowPlaying={view.nowPlaying} slotProps={{ className: cls('artwork') }} />
-              </NowPlaying>
-            ) : null}
-
-            <SeekBar progress={view.progress} percent={seekPercent} slotProps={seek.slotProps} />
-
-            <TimeDisplay progress={view.progress} />
-
-            <Transport
-              transport={view.transport}
-              slotProps={{ className: cls('transport') }}
-              onToggle={actions.toggle}
-              onNext={actions.next}
-              onPrevious={actions.previous}
-              onShuffle={actions.setShuffle}
-              onLoop={actions.setLoop}
+        <Height>
+          {state === 'error' && view.error ? (
+            <ErrorState
+              title={ui.messages.errorLabel}
+              message={ui.messages.genericError}
+              retryLabel={ui.messages.retryLabel}
+              onRetry={view.actions.canRetry ? actions.retry : undefined}
             />
+          ) : state === 'loading' ? (
+            <Loading label={ui.messages.loadingLabel} />
+          ) : state === 'empty' ? (
+            <Empty label={ui.messages.emptyLabel} />
+          ) : (
+            <>
+              {view.nowPlaying ? (
+                // The step host is keyed by track: a change animates the artwork and
+                // resets its "failed" state.
+                <NowPlaying
+                  nowPlaying={view.nowPlaying}
+                  slotProps={{ className: cls('nowPlaying') }}
+                >
+                  <StepHost stepKey={view.nowPlaying.trackId} direction={step.direction}>
+                    <Artwork
+                      key={view.nowPlaying.trackId}
+                      nowPlaying={view.nowPlaying}
+                      slotProps={{ className: cls('artwork') }}
+                    />
+                  </StepHost>
+                </NowPlaying>
+              ) : null}
 
-            <Volume
-              view={view.volumeView}
-              percent={Math.round(volume.value * 100)}
-              slotProps={{ className: cls('volume') }}
-              buttonProps={{
-                type: 'button',
-                className: cls('volumeButton'),
-                'aria-label': view.volumeView.label,
-                'aria-pressed': view.volumeView.muted,
-                onClick: actions.toggleMute,
-              }}
-              sliderProps={volume.slotProps}
-            />
+              <SeekBar progress={view.progress} percent={seekPercent} slotProps={seek.slotProps} />
 
-            {view.queue.show ? (
-              <Queue
-                queue={view.queue}
-                slotProps={{ className: cls('queue') }}
-                header={
-                  <Header
-                    label={view.queue.label}
-                    countLabel={view.queue.countLabel}
-                    slotProps={{ className: cls('header') }}
-                  />
-                }
-              >
-                <QueueList
+              <TimeDisplay progress={view.progress} />
+
+              <Transport
+                transport={view.transport}
+                slotProps={{ className: cls('transport') }}
+                onToggle={actions.toggle}
+                onNext={actions.next}
+                onPrevious={actions.previous}
+                onShuffle={actions.setShuffle}
+                onLoop={actions.setLoop}
+              />
+
+              <Volume
+                view={view.volumeView}
+                percent={Math.round(volume.value * 100)}
+                slotProps={{ className: cls('volume') }}
+                buttonProps={{
+                  type: 'button',
+                  className: cls('volumeButton'),
+                  'aria-label': view.volumeView.label,
+                  'aria-pressed': view.volumeView.muted,
+                  onClick: actions.toggleMute,
+                }}
+                sliderProps={volume.slotProps}
+              />
+
+              {view.queue.show ? (
+                <Queue
                   queue={view.queue}
-                  onSelect={actions.selectTrack}
-                  onRemove={actions.removeFromQueue}
-                />
-              </Queue>
-            ) : null}
-          </>
-        )}
+                  slotProps={{ className: cls('queue') }}
+                  header={
+                    <Header
+                      label={view.queue.label}
+                      countLabel={view.queue.countLabel}
+                      slotProps={{ className: cls('header') }}
+                    />
+                  }
+                >
+                  <QueueList
+                    queue={view.queue}
+                    onSelect={actions.selectTrack}
+                    onRemove={actions.removeFromQueue}
+                  />
+                </Queue>
+              ) : null}
+            </>
+          )}
+        </Height>
 
         <span className={cls('live')} role="status" aria-live="polite" aria-atomic="true">
           {view.live.message}

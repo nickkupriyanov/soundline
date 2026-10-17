@@ -129,6 +129,34 @@ interface TrackSourceAdapter<TData = unknown> {
 `createStaticAdapter(tracks)` для простого массива, `createMockAdapter()` для демо и тестов.
 Смена `context.key` означает другой плейлист: загрузки отменяются, очередь и выбор очищаются.
 
+### 2.7 Анимации
+
+Виджет рисуется через `AnimationKit` — три примитива, которые обвязка заменяет целиком:
+
+```ts
+interface AnimationKit {
+  StepHost(props): ReactNode; // шаг контента (обложка), ключ — текущий трек
+  Item(props): ReactNode; // строка группы: сам `<li>` с tab-порядком и `ref`
+  Height(props): ReactNode; // контейнер, следующий за высотой содержимого
+}
+```
+
+Кит рисует те же классы-хуки (`sn-step-host`/`sn-step`, `sn-stagger-item`,
+`sn-height`/`sn-height-inner`), поэтому разметка, доступность и стили не зависят от
+выбранного кита; CSS-слой читает и `data-sn-*`-хуки (`data-sn-playing`,
+`data-sn-animating`, `data-sn-motion`) — они часть контракта. `Item` обязан быть
+элементом строки и прокидывать `ref`: по нему список двигает фокус.
+
+- `cssAnimations` (по умолчанию) — только CSS, ноль рантайма: кроссфейд обложки со
+  стороной перехода, стаггер строк очереди по `--sn-index`, высота карточки,
+  «дышащие» полосы эквалайзера у играющего трека и блик заливки прогресса. Замер
+  высоты — `observeAnimatedHeight` из core.
+- `motionAnimations` — тот же кит на `motion` (`AnimatePresence`, springs, `whileTap`);
+  живёт только в подпути `/motion`, главный вход `motion` не импортирует, а `motion`
+  остаётся опциональным peer.
+- `prefers-reduced-motion: reduce` схлопывает анимации: CSS — правилом в `base.css`,
+  JS-кит — через `useReducedMotion`, высота — вообще без замера и клиппинга.
+
 ## 3. Ошибки
 
 ```ts

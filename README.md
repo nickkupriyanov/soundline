@@ -48,10 +48,40 @@ no build step:
 ```
 
 The player tokens are `--sn-width`, `--sn-width-compact`, `--sn-artwork-radius`,
-`--sn-seek-height`, `--sn-seek-fill` and `--sn-queue-max-height`; the palette is
+`--sn-seek-height`, `--sn-seek-fill`, `--sn-queue-max-height` and `--sn-card-gap`; the
+palette is
 `--sn-surface`/`--sn-panel`/`--sn-control`, `--sn-text`/`--sn-text-muted`,
 `--sn-accent` and `--sn-border`. The light theme is the same set under
 `[data-sn-theme='light']`, which the widget sets from the resolved theme.
+
+## Animations
+
+Animations are pure CSS and ship with the stylesheet — no runtime, no extra dependency.
+The widget renders through an `AnimationKit`, so a whole animation layer is one prop:
+
+| Primitive  | What it animates                                               |
+| ---------- | -------------------------------------------------------------- |
+| `StepHost` | the artwork on a track change: a crossfade in either direction |
+| `Item`     | a queue row: the stagger of its position, the press feedback   |
+| `Height`   | the card, following the height of the content it holds         |
+
+```tsx
+import { Player } from '@nickkupriyanov/soundline-react';
+
+<Player adapter={adapter} />; // cssAnimations, the default kit
+```
+
+For spring animations use the `/motion` entry point. It needs
+[Motion](https://motion.dev) as an **optional** peer; the main entry point never imports
+it, so an application that does not opt in never ships it.
+
+```tsx
+import { Player } from '@nickkupriyanov/soundline-react/motion';
+```
+
+`prefers-reduced-motion: reduce` is honoured everywhere: the stylesheet collapses every
+animation, the spring kit drops its durations, and the height is not even measured.
+The playing row's equalizer and the sweep across the filled playhead stop with it.
 
 ## Development
 

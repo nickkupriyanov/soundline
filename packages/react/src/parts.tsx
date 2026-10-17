@@ -89,8 +89,8 @@ export interface ArtworkPartProps {
   nowPlaying: NowPlayingView;
   /**
    * Spread on your own element: the `sn-artwork` box class and its sizing live
-   * here. The part is remounted on every track change, so a replacement may keep
-   * "the image failed" in its own state.
+   * here. The part is remounted on every track change — the step host is keyed by
+   * the track — so a replacement may keep "the image failed" in its own state.
    */
   slotProps: SlotProps<ComponentPropsWithoutRef<'div'>>;
 }
@@ -102,8 +102,10 @@ export interface NowPlayingPartProps {
   /** Spread on your own element: the `sn-now-playing` slot class lives here. */
   slotProps: SlotProps<ComponentPropsWithoutRef<'div'>>;
   /**
-   * The artwork, already rendered through the `Artwork` part. Place it wherever
-   * your layout wants it; drop it and the artwork disappears with it.
+   * The artwork, already rendered through the `Artwork` part and already wrapped
+   * in the animation kit's `StepHost`, which is what makes a track change a step
+   * rather than a swap. Place it wherever your layout wants it; drop it and the
+   * artwork disappears with it.
    */
   children: ReactNode;
 }
@@ -190,6 +192,10 @@ export interface VolumePartProps {
  * The roving tab index, the selection, the removal and the arrow keys are the
  * library's and arrive in `slotProps`/`removeProps`; the content of the row is
  * yours. The prepared props are what keeps a replacement a real listbox option.
+ *
+ * `slotProps` belongs on the row element itself, so the default row renders the
+ * animation kit's `Item` rather than a plain `<li>`; a replacement that wants the
+ * stagger does the same (`useAnimations()`).
  */
 export interface TrackItemPartProps {
   /** The row as the flow derived it: labels, position and state flags. */

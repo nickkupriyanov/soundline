@@ -11,8 +11,13 @@ import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** Order matters: tokens first, then the base layer, then components. */
-const CSS_SOURCES = ['src/styles/tokens.css', 'src/styles/base.css', 'src/styles/soundline.css'];
+/** Order matters: tokens, the base layer, the components, then the animations. */
+const CSS_SOURCES = [
+  'src/styles/tokens.css',
+  'src/styles/base.css',
+  'src/styles/soundline.css',
+  'src/styles/animations.css',
+];
 
 const banner = `/*! @nickkupriyanov/soundline-core — MIT licensed. Generated file, do not edit directly. */\n`;
 const parts = [];

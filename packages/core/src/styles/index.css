@@ -1,4 +1,5 @@
-/* Dev entry: the built stylesheet is a concatenation of these three files. */
+/* Dev entry: the built stylesheet is a concatenation of these four files. */
 @import './tokens.css';
 @import './base.css';
 @import './soundline.css';
+@import './animations.css';
