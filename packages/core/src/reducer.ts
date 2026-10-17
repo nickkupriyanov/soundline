@@ -223,6 +223,11 @@ export type PlayerAction =
   | { type: 'queueLoading'; token: number }
   | { type: 'queueLoaded'; token: number; tracks: Track[] }
   | { type: 'queueFailed'; token: number; error: PlayerError }
+  /**
+   * Replaces the playback order wholesale, without a token and without a load:
+   * the queue a controlled application owns, pushed in from the outside.
+   */
+  | { type: 'setQueue'; tracks: Track[] }
   | { type: 'enqueue'; tracks: Track[] }
   | { type: 'removeFromQueue'; trackId: string }
   | { type: 'moveInQueue'; from: number; to: number }
@@ -443,6 +448,56 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
     case 'queueFailed':
       if (action.token !== state.queueToken) return state;
       return { ...state, queueStatus: 'error', queueError: action.error };
+
+    case 'setQueue': {
+      const incoming = [...action.tracks];
+
+      if (incoming.length === 0) {
+        if (state.queue.length === 0 && state.currentTrackId === null) return state;
+        return {
+          ...state,
+          queue: [],
+          currentTrackId: null,
+          index: -1,
+          queueStatus: 'ready',
+          queueError: null,
+          order: null,
+          playing: false,
+          pendingPlay: false,
+          // An empty list is a valid end state, not an error.
+          status: state.status === 'playing' ? 'paused' : state.status,
+          currentTime: 0,
+          duration: 0,
+          buffered: 0,
+        };
+      }
+
+      const keepsCurrent =
+        state.currentTrackId !== null &&
+        incoming.some((track) => track.id === state.currentTrackId);
+      const selectedId = keepsCurrent
+        ? (state.currentTrackId as string)
+        : (incoming[0] as Track).id;
+      // Same rule as a loaded list: when shuffle is on, the selected track stays
+      // first and the rest keep the order the application sent.
+      const ordered =
+        state.shuffle && keepsCurrent
+          ? reorderByIds(incoming, [selectedId, ...incoming.map((track) => track.id)])
+          : incoming;
+      const index = indexOfTrack(ordered, selectedId);
+      const track = ordered[index] as Track;
+
+      const base: PlayerState = {
+        ...state,
+        queue: ordered,
+        currentTrackId: selectedId,
+        index,
+        queueStatus: 'ready',
+        queueError: null,
+        order: state.shuffle ? incoming.map((item) => item.id) : null,
+      };
+      return keepsCurrent ? base : beginLoad(base, track);
+    }
 
     case 'enqueue': {
       if (action.tracks.length === 0) return state;

@@ -207,34 +207,37 @@ soundline/
 
 ---
 
-### Iteration 4 — Контроллер
+### Iteration 4 — Контроллер · ✅ готово
 
 **Цель:** сердце библиотеки.
 
 Задачи:
 
-- [ ] `controller.ts`: `createPlayerController(options)` с `getSnapshot`, `getEngineRef`,
+- [x] `controller.ts`: `createPlayerController(options)` с `getSnapshot`, `getEngineRef`,
       `subscribe`, `updateConfig`, `updateInputs`, `updateAdapter`, `updateEngine`, `start`,
       `stop`, `actions`.
-- [ ] Actions: `play`, `pause`, `toggle`, `seek(seconds)`, `seekBy(delta)`, `next`, `previous`,
+- [x] Actions: `play`, `pause`, `toggle`, `seek(seconds)`, `seekBy(delta)`, `next`, `previous`,
       `selectTrack(id)`, `enqueue`, `removeFromQueue`, `reorderQueue`, `clearQueue`, `setVolume`,
       `toggleMute`, `setLoop`, `setShuffle`, `setRate`, `retry`, `reset`.
-- [ ] Правила: нереентрантность `play` до готовности; защита от устаревших `getTracks` через
+- [x] Правила: нереентрантность `play` до готовности; защита от устаревших `getTracks` через
       `AbortController`; смена `context.key` сбрасывает очередь и отменяет запросы; смена
       `currentTrackId` перезагружает движок; `ended` учитывает loop one/all; shuffle сохраняет
       явно выбранный трек первым.
-- [ ] Controlled/uncontrolled: `volume`, `muted`, `loop`, `shuffle`, `rate`, `playing`,
+- [x] Controlled/uncontrolled: `volume`, `muted`, `loop`, `shuffle`, `rate`, `playing`,
       `currentTrackId`, `queue` — режим фиксируется при создании; dev-предупреждение о смене
       режима, в production — сохранение исходного.
-- [ ] Обработчики: `onProgress(seconds, {duration})` (троттлинг), `onTrackChange`, `onPlay`,
-      `onPause`, `onEnded`, `onError(error, {phase})`, `onVolumeChange`, `onLoopChange`,
-      `onShuffleChange`, `onRateChange`, `onQueueChange`, `onPlayingChange`.
-- [ ] Тесты: `controller.test.ts` на fake-engine + fake-`requestAnimationFrame`/таймере
-      (автопереход по `ended`, loop, shuffle, границы, повторная загрузка того же трека,
-      отмена устаревших ответов, controlled-циклы, `start/stop` идемпотентны, ничего при
-      создании).
+- [x] Обработчики: `onProgress(seconds, {duration})` (троттлинг), `onTrackChange`, `onPlay`,
+      `onPause`, `onEnded`, `onError(error, {phase})`, `onVolumeChange`, `onMutedChange`,
+      `onLoopChange`, `onShuffleChange`, `onRateChange`, `onQueueChange`, `onPlayingChange`.
+- [x] Тесты: `controller.test.ts` на fake-engine + fake-таймере (автопереход по `ended`, loop,
+      shuffle, границы, повторная загрузка того же трека, отмена устаревших ответов,
+      controlled-циклы, `start/stop` идемпотентны, ничего при создании).
 
-**Готово, когда:** все сценарии плеера проверены в core без React и без реального аудио.
+Минимально необходимое сверх списка (отмечено в отчёте): переход редьюсера `setQueue` (нужен
+для controlled `queue`); опции контроллера `initialEngineRef`, `now`, `progressIntervalMs`,
+`random`; `onMutedChange` рядом с `onVolumeChange`.
+
+**Готово, когда:** все сценарии плеера проверены в core без React и без реального аудио. → выполнено.
 
 ---
 

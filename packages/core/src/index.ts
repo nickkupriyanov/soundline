@@ -13,6 +13,7 @@ export * from './adapter';
 export * from './classNames';
 export * from './config';
 export * from './context';
+export * from './controller';
 export * from './derive';
 export * from './duration';
 export * from './engine';

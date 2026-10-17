@@ -554,6 +554,27 @@ describe('queue editing', () => {
     expect(state.currentTrackId).toBeNull();
     expect(state.queueStatus).toBe('ready');
   });
+
+  it('replaces the queue wholesale and keeps a surviving selection', () => {
+    const state = playerReducer(fresh(), { type: 'setQueue', tracks: [TRACKS[1], TRACKS[0]] });
+    expect(ids(state)).toEqual(['b', 'a']);
+    expect(state.currentTrackId).toBe('a');
+    expect(state.index).toBe(1);
+    expect(state.queueStatus).toBe('ready');
+  });
+
+  it('loads the first track when the replaced queue drops the selection', () => {
+    const state = playerReducer(fresh(), { type: 'setQueue', tracks: [TRACKS[2]] });
+    expect(state.currentTrackId).toBe('c');
+    expect(state.status).toBe('loading');
+  });
+
+  it('empties the player for a replaced empty list', () => {
+    const state = playerReducer(fresh(), { type: 'setQueue', tracks: [] });
+    expect(state.queue).toEqual([]);
+    expect(state.currentTrackId).toBeNull();
+    expect(state.queueStatus).toBe('ready');
+  });
 });
 
 describe('context, retry, reset and lifecycle', () => {
