@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useClassNames, useComponents, usePlayerContext, useUI } from '../context';
-import { Progress } from './Progress';
+import { NowPlaying } from './NowPlaying';
+import { SeekBar } from './SeekBar';
+import { TimeDisplay } from './TimeDisplay';
+import { Transport } from './Transport';
 
 type ViewState = 'loading' | 'empty' | 'error' | 'ready';
 
@@ -12,13 +15,17 @@ function stateOf(view: { error: unknown; loading: boolean; empty: boolean }): Vi
 }
 
 /**
- * The full widget: card, state blocks, playhead and the live region.
+ * The full widget: card, state blocks, now playing, the playhead and the
+ * transport.
  *
- * This is the Iteration 6 skeleton — the transport, queue and now-playing
- * sections arrive with Iterations 7–9. What it already does properly is the
- * frame every section fits into: the themed card, the labelled region and the
- * polite announcements, plus keeping focus inside the card when a track change
- * would otherwise drop it onto `<body>`.
+ * The pieces are rendered directly here rather than through the extension map:
+ * which parts an application may replace is decided in Iteration 9, and until
+ * then a part that can be replaced would be a public contract without a
+ * documented shape. Everything this view already does properly is the frame the
+ * sections fit into: the themed card, the labelled region and the polite
+ * announcements, plus keeping focus inside the card when a track change would
+ * otherwise drop it onto `<body>`. The queue and the volume control arrive with
+ * Iteration 8.
  */
 export function PlayerView() {
   const { snapshot, actions } = usePlayerContext();
@@ -79,7 +86,30 @@ export function PlayerView() {
         ) : state === 'empty' ? (
           <Empty label={ui.messages.emptyLabel} />
         ) : (
-          <Progress progress={view.progress} />
+          <>
+            {view.nowPlaying ? (
+              // Keyed by track: a change resets the artwork's "failed" state.
+              <NowPlaying key={view.nowPlaying.trackId} nowPlaying={view.nowPlaying} />
+            ) : null}
+
+            <SeekBar
+              progress={view.progress}
+              canSeek={view.actions.canSeek}
+              seekStep={view.settings.seekStep}
+              onSeek={actions.seek}
+            />
+
+            <TimeDisplay progress={view.progress} />
+
+            <Transport
+              transport={view.transport}
+              onToggle={actions.toggle}
+              onNext={actions.next}
+              onPrevious={actions.previous}
+              onShuffle={actions.setShuffle}
+              onLoop={actions.setLoop}
+            />
+          </>
         )}
 
         <span className={cls('live')} role="status" aria-live="polite" aria-atomic="true">

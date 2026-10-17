@@ -306,25 +306,34 @@ soundline/
 
 ---
 
-### Iteration 7 — Транспорт, NowPlaying, SeekBar
+### Iteration 7 — Транспорт, NowPlaying, SeekBar · ✅ готово
 
 **Цель:** основной UI плеера.
 
 Задачи:
 
-- [ ] `NowPlaying.tsx`: обложка (aspect-ratio, fallback), название, исполнитель/альбом, активная
+- [x] `NowPlaying.tsx`: обложка (aspect-ratio, fallback), название, исполнитель/альбом, активная
       строка.
-- [ ] `Transport.tsx`: play/pause (`aria-pressed`, state-зависимая подпись), prev/next
+- [x] `Transport.tsx`: play/pause (`aria-pressed`, state-зависимая подпись), prev/next
       (disabled по `canPrev/canNext`), shuffle и repeat (циклические `off → all → one`, `aria-pressed`).
-- [ ] `SeekBar.tsx`: `role="slider"`, `aria-valuemin/max/now`, `aria-valuetext`
+- [x] `SeekBar.tsx`: `role="slider"`, `aria-valuemin/max/now`, `aria-valuetext`
       («1:23 из 4:05»), pointer drag + keyboard (`←/→` = `seekStep`, `Home/End`, `PageUp/Down`
       = ±10 × `seekStep`), буферизованный слой, `:focus-visible`.
-- [ ] `TimeDisplay.tsx`: текущее/полное время из view.
-- [ ] Оптимизация: локальное «тянущееся» значение во время drag, коммит в `seek()` на отпускание;
+- [x] `TimeDisplay.tsx`: текущее/полное время из view.
+- [x] Оптимизация: локальное «тянущееся» значение во время drag, коммит в `seek()` на отпускание;
       обновления `onProgress` не дёргают перерисовку лишний раз.
-- [ ] Тесты: `controls.test.tsx` — клавиатура слайдера, drag, доступные имена, циклический loop.
+- [x] Тесты: `controls.test.tsx` — клавиатура слайдера, drag, доступные имена, циклический loop.
 
-**Готово, когда:** плеер полностью управляем мышью и клавиатурой на одном треке.
+Уточнения против списка (отмечено в отчёте): у play/pause только сменная подпись (`Play` ⇄
+`Pause`) без `aria-pressed` — менять и доступное имя, и pressed-состояние избыточно, скринридер
+читал бы «Pause, pressed»; `aria-pressed` остался у shuffle/repeat, как и просит задача.
+`Progress.tsx` из Iteration 6 (презентационная заглушка) заменён интерактивным `SeekBar` и удалён.
+Новые части рендерятся в `PlayerView` напрямую: карта `SoundlineComponents` — Iteration 9.
+Минимально необходимое сверх списка: `↑/↓` двигают playhead наравне с `←/→` (паритет с APG),
+`aria-orientation`, `aria-disabled` + `tabIndex={-1}` у недоступного слайдера, иконки
+`Shuffle`/`Repeat`/`RepeatOne`/`Note` и сброс «сломанной» обложки по `key` трека.
+
+**Готово, когда:** плеер полностью управляем мышью и клавиатурой на одном треке. → выполнено.
 
 ---
 
