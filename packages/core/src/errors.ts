@@ -90,3 +90,16 @@ export function isAbortError(value: unknown): boolean {
   const name = (value as { name?: unknown }).name;
   return name === 'AbortError' || name === 'TimeoutError';
 }
+
+/**
+ * Creates the cancellation error a superseded request is rejected with.
+ *
+ * The library builds it itself instead of relying on `DOMException`, so an
+ * adapter, an engine and the controller all mean the same thing by "aborted" —
+ * on the server as much as in a browser — and `isAbortError()` recognises it.
+ */
+export function createAbortError(message = 'The request was aborted'): Error {
+  const error = new Error(message);
+  error.name = 'AbortError';
+  return error;
+}

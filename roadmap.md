@@ -178,25 +178,32 @@ soundline/
 
 ---
 
-### Iteration 3 — Движок и адаптер
+### Iteration 3 — Движок и адаптер · ✅ готово
 
 **Цель:** два заменяемых контракта + фейки.
 
 Задачи:
 
-- [ ] `engine.ts`: интерфейс `PlaybackEngine` (`load`, `play`, `pause`, `seek`, `setVolume`,
+- [x] `engine.ts`: интерфейс `PlaybackEngine` (`load`, `play`, `pause`, `seek`, `setVolume`,
       `setMuted`, `setRate`, `getState`, `subscribe`); `createMediaEngine()` — обёртка над
       `HTMLAudioElement`, создаётся **лениво** (никаких обращений к `window`/`document` при
       импорте), события `loadedmetadata/timeupdate/durationchange/progress/ended/error`.
-- [ ] `adapter.ts`: `TrackQuery`, `TrackSourceAdapter` (`getTracks`, опционально
-      `resolveSource`), `createStaticAdapter(tracks)`, `SortableAdapter` не нужен (см. v1 scope).
-- [ ] `mock.ts`: `createMockEngine({ duration, latency, failures, now })` и
-      `createMockAdapter({ tracks, latency, failures })`; детерминированы, зависят только от
-      переданных параметров.
-- [ ] Тесты: `engine.test.ts` (контракт на фейке), `adapter.test.ts`, `mock.test.ts`
-      (детерминизм, инъекция ошибок `TRACK_NOT_FOUND`/`SOURCE_UNAVAILABLE`/`NOT_SUPPORTED`).
+      Добавлены также `LoadOptions`, `createEngineState`, `MediaEngineOptions.createElement`
+      (точка инъекции элемента) и `codeForMediaError`.
+- [x] `adapter.ts`: `TrackQuery`, `ResolvedSource`, `TrackSourceAdapter` (`getTracks`,
+      опционально `resolveSource`), `createStaticAdapter(tracks)`, `SortableAdapter` не нужен
+      (см. v1 scope).
+- [x] `mock.ts`: `createMockEngine({ duration, latency, failures, now, tickMs })` и
+      `createMockAdapter({ tracks, latency, failure, sourceFailures })`; детерминированы,
+      зависят только от переданных параметров и инъектируемого времени.
+- [x] `errors.ts`: `createAbortError()` — единая отмена (без `DOMException`), которую
+      `isAbortError()` распознаёт и в браузере, и на сервере.
+- [x] Тесты: `engine.test.ts` (контракт на фейке + ленивое создание/отсутствие DOM),
+      `adapter.test.ts`, `mock.test.ts` (детерминизм, инъекция ошибок
+      `TRACK_NOT_FOUND`/`SOURCE_UNAVAILABLE`/`NOT_SUPPORTED`/`NETWORK_FAILURE`, latency, abort)
+      (+ `errors.test.ts` по конвенции «парный тест каждому модулю»).
 
-**Готово, когда:** core умеет «играть» трек через `createMockEngine` в тестах.
+**Готово, когда:** core умеет «играть» трек через `createMockEngine` в тестах. → выполнено.
 
 ---
 

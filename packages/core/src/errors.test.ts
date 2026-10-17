@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PLAYBACK_ERROR_CODES,
   PlaybackError,
+  createAbortError,
   isAbortError,
   isPlaybackError,
   isPlaybackErrorCode,
@@ -105,5 +106,18 @@ describe('isAbortError', () => {
     expect(isAbortError({ name: 'NetworkError' })).toBe(false);
     expect(isAbortError(null)).toBe(false);
     expect(isAbortError(undefined)).toBe(false);
+  });
+});
+
+describe('createAbortError', () => {
+  it('builds an error that `isAbortError` recognises', () => {
+    const error = createAbortError();
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('AbortError');
+    expect(isAbortError(error)).toBe(true);
+  });
+
+  it('takes a custom message', () => {
+    expect(createAbortError('superseded').message).toBe('superseded');
   });
 });
