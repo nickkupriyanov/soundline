@@ -1,45 +1,19 @@
-import { useState } from 'react';
-import type { NowPlayingView } from '@nickkupriyanov/soundline-core';
 import { useClassNames } from '../context';
-import { NoteIcon } from './icons';
-
-/** Everything the now-playing row renders. */
-export interface NowPlayingProps {
-  /** The current track, ready to render. */
-  nowPlaying: NowPlayingView;
-}
+import type { NowPlayingPartProps } from '../parts';
 
 /**
  * What is playing: the artwork and the track's own labels.
  *
- * The artwork is decorative — the title next to it carries the meaning — so it
- * is always rendered with an empty `alt`. When the track has no artwork, or the
- * image fails to load, the placeholder takes its place instead of a broken
- * image. The parent keys this block on the track id, which is what resets the
- * "the image failed" flag when the track changes.
+ * The artwork arrives as `children`, already rendered through the `Artwork`
+ * part, so a replacement decides where it sits rather than how it loads. The
+ * labels are the derived ones, so the row can never disagree with the announcer.
  */
-export function NowPlaying({ nowPlaying }: NowPlayingProps) {
+export function NowPlaying({ nowPlaying, slotProps, children }: NowPlayingPartProps) {
   const cls = useClassNames();
-  const [failed, setFailed] = useState(false);
-  const artwork = failed ? null : nowPlaying.artwork;
 
   return (
-    <div className={cls('nowPlaying')}>
-      <div className={cls('artwork')}>
-        {artwork ? (
-          <img
-            src={artwork}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onError={() => setFailed(true)}
-          />
-        ) : (
-          <span className={cls('artworkFallback')} aria-hidden="true">
-            <NoteIcon width={26} height={26} />
-          </span>
-        )}
-      </div>
+    <div {...slotProps}>
+      {children}
 
       <div className={cls('trackInfo')}>
         <span className={cls('title')}>{nowPlaying.title}</span>

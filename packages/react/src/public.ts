@@ -20,14 +20,37 @@ export { cssAnimations } from './animations/css';
 
 /* -- Replaceable parts ------------------------------------------------------ */
 
-export { DEFAULT_COMPONENTS, DefaultEmpty, DefaultError, DefaultLoading } from './parts';
+export {
+  DEFAULT_COMPONENTS,
+  DefaultArtwork,
+  DefaultEmpty,
+  DefaultError,
+  DefaultHeader,
+  DefaultLoading,
+  DefaultNowPlaying,
+  DefaultQueue,
+  DefaultSeekBar,
+  DefaultTrackItem,
+  DefaultTransport,
+  DefaultVolume,
+} from './parts';
 export type {
+  ArtworkPartProps,
   EmptyPartProps,
   ErrorPartProps,
+  HeaderPartProps,
   LoadingPartProps,
+  NowPlayingPartProps,
   PartComponent,
+  QueuePartProps,
+  SeekBarPartProps,
+  SlotProps,
   SoundlineComponents,
+  TrackItemPartProps,
+  TransportPartProps,
+  VolumePartProps,
 } from './parts';
+export { nextLoopMode } from './components/Transport';
 
 /* -- Domain, copy and helpers from core ------------------------------------- */
 

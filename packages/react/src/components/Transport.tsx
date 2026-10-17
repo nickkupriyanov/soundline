@@ -1,5 +1,6 @@
-import { LOOP_MODES, type LoopMode, type TransportView } from '@nickkupriyanov/soundline-core';
+import { LOOP_MODES, type LoopMode } from '@nickkupriyanov/soundline-core';
 import { useClassNames } from '../context';
+import type { TransportPartProps } from '../parts';
 import {
   NextIcon,
   PauseIcon,
@@ -10,23 +11,12 @@ import {
   ShuffleIcon,
 } from './icons';
 
-/** Everything the transport renders. */
-export interface TransportProps {
-  /** The controls, their labels and which of them are available. */
-  transport: TransportView;
-  /** Starts or stops playback, following `transport.action`. */
-  onToggle(): void;
-  onNext(): void;
-  onPrevious(): void;
-  onShuffle(shuffle: boolean): void;
-  onLoop(loop: LoopMode): void;
-}
-
 /**
  * The repeat button walks this cycle: off → all → one → off.
  *
  * The order comes from core's `LOOP_MODES`, so the widget cannot disagree with
- * the value the player accepts.
+ * the value the player accepts. A replacement of the transport receives
+ * `onLoop(mode)` and should use this helper rather than re-deriving the cycle.
  */
 export function nextLoopMode(mode: LoopMode): LoopMode {
   const position = LOOP_MODES.indexOf(mode);
@@ -47,16 +37,17 @@ export function nextLoopMode(mode: LoopMode): LoopMode {
  */
 export function Transport({
   transport,
+  slotProps,
   onToggle,
   onNext,
   onPrevious,
   onShuffle,
   onLoop,
-}: TransportProps) {
+}: TransportPartProps) {
   const cls = useClassNames();
 
   return (
-    <div className={cls('transport')}>
+    <div {...slotProps}>
       <button
         type="button"
         className={cls('shuffleButton')}
