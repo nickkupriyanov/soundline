@@ -152,28 +152,29 @@ soundline/
 
 ---
 
-### Iteration 2 — Reducer и производная view
+### Iteration 2 — Reducer и производная view · ✅ готово
 
 **Цель:** чистая модель состояния и чистый `derivePlayerView`.
 
 Задачи:
 
-- [ ] `reducer.ts`: `PlayerState` (queue, currentTrackId, index, playing, volume, muted, loop,
+- [x] `reducer.ts`: `PlayerState` (queue, currentTrackId, index, playing, volume, muted, loop,
       shuffle, rate, status, currentTime, duration, buffered, error, interaction flags),
       `createPlayerState`, `playerReducer`, закрытый список `PlayerAction`.
-- [ ] `config.ts`: `PlayerConfigInput`/`PlayerConfig`/`resolvePlayerConfig`, детерминированные
+- [x] `config.ts`: `PlayerConfigInput`/`PlayerConfig`/`resolvePlayerConfig`, детерминированные
       фолбэки (`locale`, `theme`, `layout`), `seekStep`, `volumeStep`, `showQueue`,
       `pauseWhenHidden`, `mediaSession`.
-- [ ] `derive.ts`: `PlayerView` — `nowPlaying` (форматированные подписи), `progress`
+- [x] `derive.ts`: `PlayerView` — `nowPlaying` (форматированные подписи), `progress`
       (`position`, `duration`, `percent`, `bufferedPercent`, `valueText`), `transport`
       (canPlay/canNext/canPrev, labels), `volumeView`, `queue` (элементы с `isActive`, `index`,
       подписи), `shuffle`/`loop` режимы, `live.message`, `actions` (canSeek/canToggle).
-- [ ] Кеш: `derivePlayerView(state, config, engineRef)` мемоизируется в контроллере по ключу
+- [x] Кеш: `derivePlayerView(state, config, engineRef)` мемоизируется в контроллере по ключу
       `revision|engineRevision|configRevision`; сам `derive` остаётся чистым.
-- [ ] Тесты: `reducer.test.ts` (все переходы, границы очереди, loop one/all, shuffle
+- [x] Тесты: `reducer.test.ts` (все переходы, границы очереди, loop one/all, shuffle
       детерминирован), `derive.test.ts` (подписи, проценты, доступность действий, кеш).
 
-**Готово, когда:** редьюсер и derive покрыты тестами без движка и адаптера.
+**Готово, когда:** редьюсер и derive покрыты тестами без движка и адаптера. → выполнено
+(+ `config.test.ts` по конвенции «парный тест каждому модулю»).
 
 ---
 
