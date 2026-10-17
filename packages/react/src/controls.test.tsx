@@ -59,9 +59,10 @@ describe('the now-playing row', () => {
     renderPlayer();
     const slider = await reachSlider();
 
-    expect(screen.getByText('Alpha')).toBeInTheDocument();
-    expect(screen.getByText('One')).toBeInTheDocument();
-    expect(screen.getByText('First')).toBeInTheDocument();
+    // The now-playing row, not the queue row that repeats the same titles.
+    expect(screen.getByText('Alpha', { selector: '.sn-title' })).toBeInTheDocument();
+    expect(screen.getByText('One', { selector: '.sn-artist' })).toBeInTheDocument();
+    expect(screen.getByText('First', { selector: '.sn-album' })).toBeInTheDocument();
 
     // Nothing has been loaded yet, but the bar already describes the whole track.
     expect(screen.getByText('0:00')).toBeInTheDocument();
@@ -119,7 +120,7 @@ describe('the transport', () => {
 
     await user.click(screen.getByRole('button', { name: 'Next track' }));
 
-    expect(await screen.findByText('Beta')).toBeInTheDocument();
+    expect(await screen.findByText('Beta', { selector: '.sn-title' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next track' })).toBeDisabled();
     // Going back is always possible: it restarts the track at the very least.
     expect(screen.getByRole('button', { name: 'Previous track' })).toBeEnabled();
@@ -131,7 +132,7 @@ describe('the transport', () => {
     await reachSlider();
 
     await user.click(screen.getByRole('button', { name: 'Next track' }));
-    await screen.findByText('Beta');
+    await screen.findByText('Beta', { selector: '.sn-title' });
 
     expect(screen.getByRole('button', { name: 'Repeat playlist' })).toHaveAttribute(
       'aria-pressed',

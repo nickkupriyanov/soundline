@@ -32,10 +32,10 @@ function definedTokens(): Set<string> {
 }
 
 /**
- * Vars the component layer owns itself, next to the token that feeds them — the
- * `data-sn-layout` widths are the only ones.
+ * Vars the component layer owns itself, next to the token that feeds them: the
+ * `data-sn-layout` widths and the volume fill, which a binding writes inline.
  */
-const LOCAL_VARS = new Set(['--sn-width-current']);
+const LOCAL_VARS = new Set(['--sn-width-current', '--sn-volume-percent']);
 
 describe('design tokens', () => {
   it('defines the player tokens the layout reads', () => {

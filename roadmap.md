@@ -337,23 +337,30 @@ soundline/
 
 ---
 
-### Iteration 8 — Volume и очередь
+### Iteration 8 — Volume и очередь · ✅ готово
 
 **Цель:** громкость и плейлист.
 
 Задачи:
 
-- [ ] `VolumeControl.tsx`: mute-кнопка + слайдер `role="slider"`, `aria-valuetext` в процентах,
+- [x] `VolumeControl.tsx`: mute-кнопка + слайдер `role="slider"`, `aria-valuetext` в процентах,
       `volumeStep`, сохранение прежней громкости при unmute.
-- [ ] `Queue.tsx` + `TrackItem.tsx`: `role="listbox"`, `option` с `aria-selected`, roving
+- [x] `Queue.tsx` + `TrackItem.tsx`: `role="listbox"`, `option` с `aria-selected`, roving
       tabindex (стрелки/`Home/End`), клик/Enter/Space → `selectTrack`, кнопка удаления,
       индикатор активного/играющего трека, прокрутка при `--sn-queue-max-height`.
-- [ ] Порядок и shuffle: отображаемый порядок = фактический порядок воспроизведения;
+- [x] Порядок и shuffle: отображаемый порядок = фактический порядок воспроизведения;
       `next/prev` согласованы с отображением.
-- [ ] Тесты: `queue.test.tsx` — клавиатурная навигация, выбор, удаление, активный элемент,
+- [x] Тесты: `queue.test.tsx` — клавиатурная навигация, выбор, удаление, активный элемент,
       пустая очередь (`Empty`).
 
+Минимально необходимое сверх списка (отмечено в отчёте): `volume.test.tsx` (объём тестов
+обвязки для громкости); снятие mute движением слайдера; `PageUp/PageDown` как ±10 шагов
+(`volumeStep`); `RemoveIcon`/`VolumeIcon`/`MuteIcon`; пилюля счётчика в `queueHeader`;
+локальная переменная `--sn-volume-percent` (inline) и двухстопный градиент заливки трека
+громкости; правка селекторов в `controls.test.tsx` (те же заголовки теперь и в очереди).
+
 **Готово, когда:** плейлист управляется мышью и клавиатурой, состояние согласовано с движком.
+→ выполнено.
 
 ---
 

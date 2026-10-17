@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useClassNames, useComponents, usePlayerContext, useUI } from '../context';
 import { NowPlaying } from './NowPlaying';
+import { Queue } from './Queue';
 import { SeekBar } from './SeekBar';
 import { TimeDisplay } from './TimeDisplay';
 import { Transport } from './Transport';
+import { VolumeControl } from './VolumeControl';
 
 type ViewState = 'loading' | 'empty' | 'error' | 'ready';
 
@@ -15,8 +17,8 @@ function stateOf(view: { error: unknown; loading: boolean; empty: boolean }): Vi
 }
 
 /**
- * The full widget: card, state blocks, now playing, the playhead and the
- * transport.
+ * The full widget: card, state blocks, now playing, the playhead, the transport,
+ * the volume control and the queue.
  *
  * The pieces are rendered directly here rather than through the extension map:
  * which parts an application may replace is decided in Iteration 9, and until
@@ -24,8 +26,7 @@ function stateOf(view: { error: unknown; loading: boolean; empty: boolean }): Vi
  * documented shape. Everything this view already does properly is the frame the
  * sections fit into: the themed card, the labelled region and the polite
  * announcements, plus keeping focus inside the card when a track change would
- * otherwise drop it onto `<body>`. The queue and the volume control arrive with
- * Iteration 8.
+ * otherwise drop it onto `<body>`.
  */
 export function PlayerView() {
   const { snapshot, actions } = usePlayerContext();
@@ -109,6 +110,21 @@ export function PlayerView() {
               onShuffle={actions.setShuffle}
               onLoop={actions.setLoop}
             />
+
+            <VolumeControl
+              view={view.volumeView}
+              volumeStep={view.settings.volumeStep}
+              onVolumeChange={actions.setVolume}
+              onToggleMute={actions.toggleMute}
+            />
+
+            {view.queue.show ? (
+              <Queue
+                queue={view.queue}
+                onSelect={actions.selectTrack}
+                onRemove={actions.removeFromQueue}
+              />
+            ) : null}
           </>
         )}
 

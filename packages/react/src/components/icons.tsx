@@ -1,9 +1,9 @@
 import type { ComponentPropsWithoutRef } from 'react';
 
 /**
- * The icons the transport draws. They exist now so Iteration 7 has its seats;
- * every icon is decorative (`aria-hidden`) and takes its colour from
- * `currentColor`.
+ * The icons the widget draws: transport, volume and the queue's remove button.
+ * Every icon is decorative (`aria-hidden`) and takes its colour from
+ * `currentColor`; the accessible name always comes from the control's label.
  */
 
 function Icon({ children, ...props }: ComponentPropsWithoutRef<'svg'>) {
@@ -111,6 +111,53 @@ export function RepeatOneIcon(props: ComponentPropsWithoutRef<'svg'>) {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </Icon>
+  );
+}
+
+/** The speaker with two waves: the volume button while sound is on. */
+export function VolumeIcon(props: ComponentPropsWithoutRef<'svg'>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9h3l4-3.5v13L7 15H4z" fill="currentColor" />
+      <path
+        d="M14.5 9.5a3.5 3.5 0 0 1 0 5M17 7a7 7 0 0 1 0 10"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </Icon>
+  );
+}
+
+/** The same speaker with a cross: the volume button while muted. */
+export function MuteIcon(props: ComponentPropsWithoutRef<'svg'>) {
+  return (
+    <Icon {...props}>
+      <path d="M4 9h3l4-3.5v13L7 15H4z" fill="currentColor" />
+      <path
+        d="M15 9.5l5 5M20 9.5l-5 5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </Icon>
+  );
+}
+
+/** The cross that removes a track from the queue. */
+export function RemoveIcon(props: ComponentPropsWithoutRef<'svg'>) {
+  return (
+    <Icon width={16} height={16} {...props}>
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
       />
     </Icon>
   );

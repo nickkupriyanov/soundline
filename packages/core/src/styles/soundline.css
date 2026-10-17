@@ -378,14 +378,20 @@
   touch-action: none;
 }
 
-/* The track is the slider itself; the fill is drawn by the thumb's shadow. */
+/* The track is the slider itself; `--sn-volume-percent` draws the fill. */
 .sn-volume-slider::before {
   content: '';
   position: absolute;
   inset: 50% 0 auto;
   height: var(--sn-seek-height);
   margin-top: calc(var(--sn-seek-height) / -2);
-  background: var(--sn-control);
+  background: linear-gradient(
+    to right,
+    var(--sn-seek-fill) 0,
+    var(--sn-seek-fill) var(--sn-volume-percent, 0%),
+    var(--sn-control) var(--sn-volume-percent, 0%),
+    var(--sn-control) 100%
+  );
   border-radius: var(--sn-radius-pill);
 }
 
