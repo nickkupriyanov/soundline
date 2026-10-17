@@ -4,8 +4,6 @@
  * Pure-CSS animations, zero runtime dependencies, dark theme by default. For
  * spring transitions use `@nickkupriyanov/soundline-react/motion` (requires
  * `motion`).
- *
- * Filled in over Iterations 6–9.
  */
-
-export {};
+export * from './public';
+export { Player } from './Player';

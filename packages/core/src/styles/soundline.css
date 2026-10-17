@@ -564,6 +564,19 @@
   border-radius: var(--sn-radius-panel);
 }
 
+/* The retry affordance inside the error state. */
+.sn-error button {
+  margin-top: 4px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--sn-accent-contrast);
+  background: var(--sn-danger);
+  border: 0;
+  border-radius: var(--sn-radius-pill);
+  cursor: pointer;
+}
+
 /* The live region announces changes; it is never visible. */
 .sn-live {
   position: absolute;

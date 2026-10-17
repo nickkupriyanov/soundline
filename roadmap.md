@@ -268,28 +268,41 @@ soundline/
 
 ---
 
-### Iteration 6 — Каркас React-обвязки
+### Iteration 6 — Каркас React-обвязки · ✅ готово
 
 **Цель:** контекст, хук и скелет `PlayerView`, играющий mock-трек.
 
 Задачи:
 
-- [ ] `types.ts`: `SoundlineProps` (adapter, engine, mode/layout, controlled-пары, `seekStep`,
+- [x] `types.ts`: `SoundlineProps` (adapter, engine, mode/layout, controlled-пары, `seekStep`,
       `volumeStep`, `showQueue`, `pauseWhenHidden`, `mediaSession`, `locale`, `messages`,
       `theme`, `className`, `classNames`, `components`, `animations`, `autoFocus`, колбэки),
       `AnimationKit`, `StepHost/Item/Height`-эквиваленты.
-- [ ] `context.tsx`: `FlowContext` (`{ snapshot, actions }`), `UIContext`, `usePlayerContext`,
+- [x] `context.tsx`: `FlowContext` (`{ snapshot, actions }`), `UIContext`, `usePlayerContext`,
       `useUI`, `useComponents`, `useClassNames`, `useAnimations`.
-- [ ] `usePlayerFlow.ts`: `useBrowserDefaults` (locale/theme после маунта), `usePlayerController`
+- [x] `usePlayerFlow.ts`: `useBrowserDefaults` (locale/theme после маунта), `usePlayerController`
       (создание один раз, `updateAdapter/updateConfig/updateInputs` в эффекте, `start/stop`,
       `observeVisibilityChange` → `pauseWhenHidden`), `usePlayerFlow`, `usePlayerUI`.
-- [ ] `Player.tsx`: `PlayerProvider`, `createPlayer(animations)`, `Player` (по умолчанию CSS-кит).
-- [ ] `PlayerView.tsx`: карточка, `data-sn-theme/layout`, region с `aria-label`, live region,
+- [x] `Player.tsx`: `PlayerProvider`, `createPlayer(animations)`, `Player` (по умолчанию CSS-кит).
+- [x] `PlayerView.tsx`: карточка, `data-sn-theme/layout`, region с `aria-label`, live region,
       focus management при смене трека.
-- [ ] `blocks.tsx`, `icons.tsx`, `Progress.tsx` (минимальные заглушки для рендера).
-- [ ] Тест: `Player.test.tsx` — рендер, play/pause через mock-engine, смена трека.
+- [x] `blocks.tsx`, `icons.tsx`, `Progress.tsx` (минимальные заглушки для рендера).
+- [x] Тест: `Player.test.tsx` — рендер, play/pause через mock-engine, смена трека.
+
+Уточнения против списка (отмечено в отчёте): «mode/layout» из плана читается как один
+`layout` — доменная модель Soundline не знает `mode`. `useBrowserDefaults` определяет
+**только локаль** (`navigator.language`), тема остаётся `dark` по умолчанию — согласовано с
+`FALLBACK_THEME` и детерминированным SSR.
+
+Минимально необходимое сверх списка (отмечено в отчёте): `public.ts` (общая поверхность для
+будущего `/motion`), минимальный `animations/css.tsx` (кит `cssAnimations` для
+`createPlayer`; полные анимации — итерация 10), минимальный `parts.tsx`
+(`SoundlineComponents` + `DEFAULT_COMPONENTS`; полная карта — итерация 9), `components/Progress.tsx`
+как презентационная заглушка seek-слайдера (интерактивный `SeekBar` — итерация 7), правило
+`.sn-error button` в `soundline.css` ради кнопки retry.
 
 **Готово, когда:** `<Player adapter={createMockAdapter()} />` играет и переключает mock-треки.
+→ выполнено.
 
 ---
 
