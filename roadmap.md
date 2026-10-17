@@ -128,23 +128,25 @@ soundline/
 
 ---
 
-### Iteration 1 — Доменная модель core
+### Iteration 1 — Доменная модель core · ✅ готово
 
 **Цель:** типы и словари, вся дальнейшая работа опирается на них.
 
 Задачи:
 
-- [ ] `types.ts`: `Track<TData>`, `PlaylistContext<TData>`, `EngineState`, `EngineStatus`,
+- [x] `types.ts`: `Track<TData>`, `PlaylistContext<TData>`, `EngineState`, `EngineStatus`,
       `LoopMode`, `PlaybackErrorCode`, `SoundlineMessages`, `SnClassSlot`, `SoundlineTheme`,
       `SoundlineLayout`, `PlayerSelection` (атомарный выбор: `{ trackId: string | null }`).
-- [ ] `context.ts`: `DEFAULT_PLAYLIST_CONTEXT`, `contextKeyOf`.
-- [ ] `errors.ts`: `PlaybackError`, `PLAYBACK_ERROR_CODES`, `isPlaybackErrorCode`,
+      Добавлены также `SoundlineLocale`, `PlaybackErrorPhase`, `EngineState.error`.
+- [x] `context.ts`: `DEFAULT_PLAYLIST_CONTEXT`, `contextKeyOf`.
+- [x] `errors.ts`: `PlaybackError`, `PLAYBACK_ERROR_CODES`, `isPlaybackErrorCode`,
       `isPlaybackError`, `toPlaybackError` (структурно, не `instanceof`).
-- [ ] `i18n.ts`: словари `en`/`ru`, `defaultMessages`, `resolveMessages`, `format()` c `{name}`.
-- [ ] `classNames.ts`: `SnClassSlot`, `SN_CLASS`, `cx`, `ClassValue`.
-- [ ] `ids.ts`: `createId(prefix?)`.
-- [ ] `duration.ts`: `formatDuration(seconds, {units})`, `parseDuration`, `clamp`.
-- [ ] Тесты: `errors.test.ts`, `i18n.test.ts`, `classNames.test.ts`, `duration.test.ts`, `ids.test.ts`.
+- [x] `i18n.ts`: словари `en`/`ru`, `defaultMessages`, `resolveMessages`, `format()` c `{name}`.
+- [x] `classNames.ts`: `SnClassSlot`, `SN_CLASS`, `cx`, `ClassValue` (реэкспорт из `utils/cx`).
+- [x] `ids.ts`: `createId(prefix?)`.
+- [x] `duration.ts`: `formatDuration(seconds, {units})`, `parseDuration`, `clamp`.
+- [x] Тесты: `errors.test.ts`, `i18n.test.ts`, `classNames.test.ts`, `duration.test.ts`, `ids.test.ts`
+      (+ `context.test.ts` по конвенции «парный тест каждому модулю»).
 
 **Готово, когда:** типы публичны через `index.ts`, тесты зелёные, нет зависимостей от React/DOM.
 
