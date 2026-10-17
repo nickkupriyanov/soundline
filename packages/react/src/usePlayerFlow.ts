@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import {
   FALLBACK_THEME,
   createPlayerController,
+  resolveMediaSession,
   resolveMessages,
   type PlayerConfigInput,
   type PlayerController,
@@ -20,6 +21,7 @@ import {
 import { observeVisibilityChange } from '@nickkupriyanov/soundline-core/dom';
 import { cssAnimations } from './animations/css';
 import type { SoundlineUIContextValue, UsePlayerFlowResult } from './context';
+import { useMediaSession } from './hooks/useMediaSession';
 import type { SoundlineProps } from './types';
 
 export type { UsePlayerFlowResult } from './context';
@@ -185,6 +187,12 @@ export function usePlayerController<TData = unknown>(
       }),
     [controller],
   );
+
+  // The lock-screen controls and hardware media keys, when the application asked
+  // for them. Off by default: claiming the browser's session is a deliberate
+  // choice, not a side effect of rendering a player.
+  const mediaSession = resolveMediaSession(props.mediaSession);
+  useMediaSession(controller, mediaSession.enabled, mediaSession.skipSeconds);
 
   return controller;
 }

@@ -486,20 +486,31 @@ Iteration 16/позже.
 
 ---
 
-### Iteration 12 — Media Session и пауза при скрытой вкладке
+### Iteration 12 — Media Session и пауза при скрытой вкладке · ✅ готово
 
 **Цель:** «современное» ощущение и корректность поведения.
 
 Задачи:
 
-- [ ] Интеграция Media Session API: метаданные (`title/artist/album/artwork`) и хендлеры
+- [x] Интеграция Media Session API: метаданные (`title/artist/album/artwork`) и хендлеры
       `play/pause/nexttrack/previoustrack/seekbackward/seekforward/seekto`;
       `mediaSession?: boolean | { skipSeconds?: number }`, по умолчанию выключено.
-- [ ] `pauseWhenHidden` (по умолчанию `false`): пауза на `visibilitychange`.
-- [ ] Всё за пределами core: только в React-обвязке, через `observeVisibilityChange`.
-- [ ] Тесты: `mediaSession.test.tsx` (мок `navigator.mediaSession`), visibility.
+- [x] `pauseWhenHidden` (по умолчанию `false`): пауза на `visibilitychange`.
+- [x] Всё за пределами core: только в React-обвязке, через `observeVisibilityChange`.
+- [x] Тесты: `mediaSession.test.tsx` (мок `navigator.mediaSession`), visibility.
+
+Уточнения против списка (отмечено в отчёте): интеграция живёт в `usePlayerController`
+(внутренний хук `hooks/useMediaSession.ts`), поэтому её получают и `<Player>`, и headless
+`usePlayerFlow`; публичный контракт — это пропсы `mediaSession`/`pauseWhenHidden`, сам хук
+не экспортируется. `pauseWhenHidden` был подключён ещё в Iteration 6 — в этой итерации он
+покрыт тестами и не менялся. `setPositionState` обновляется на переходах состояния (progress-
+тики в подписчиков не попадают): браузер сам досчитывает позицию между ними по
+`playbackRate`. Каждый `setActionHandler` обёрнут в `try/catch` — браузер без поддержки
+отдельного действия бросает `NotSupportedError`, остальные хендлеры остаются.
 
 **Готово, когда:** метаданные и хендлеры работают, при отсутствии API — тихий откат.
+→ выполнено (`mediaSession.test.tsx`, `visibility.test.tsx`; changeset `minor` для
+`soundline-react`, core не менялся).
 
 ---
 

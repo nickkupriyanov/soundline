@@ -128,6 +128,25 @@ be in — idle, playing, paused, ended, loading, empty, failures, both themes, c
 the build on any violation. Contrast is checked in the browser pass instead, because
 `jsdom` applies no stylesheet.
 
+## Media Session and background playback
+
+The browser's own controls — the lock screen, the notification shade, the keyboard's media
+keys — are claimed only when asked for, through `mediaSession`:
+
+```tsx
+<Player adapter={adapter} mediaSession={{ skipSeconds: 15 }} />
+```
+
+The widget then publishes the current track (`title`, `artist`, `album`, `artwork`) and the
+`playing`/`paused` state, and routes `play`, `pause`, `nexttrack`, `previoustrack`,
+`seekbackward`, `seekforward` and `seekto` back to its actions. `skipSeconds` (default `10`)
+is the step the skip buttons use, unless the browser hands one of its own. Where the API is
+missing — the server, older browsers — or a single action is unsupported, the widget carries
+on silently.
+
+`pauseWhenHidden` stops playback when the document becomes hidden. It is off by default, and
+nothing resumes on its own when the tab comes back: that stays the application's call.
+
 ## Development
 
 ```bash

@@ -222,8 +222,14 @@ type PlaybackErrorCode =
 - Автоматическая проверка — axe (`jest-axe`) по каждому состоянию виджета в
   `packages/react/src/a11y.test.tsx`; контрастность проверяется браузерным прогоном
   (в jsdom стили не применяются).
-- `prefers-reduced-motion` глушит анимации; `pauseWhenHidden` опционален.
-- Media Session API подключается по флагу `mediaSession`.
+- `prefers-reduced-motion` глушит анимации.
+- `pauseWhenHidden` (по умолчанию `false`) ставит на паузу, когда документ становится
+  скрытым; обратно не возобновляет — это решение приложения, а не плеера.
+- Media Session API подключается по флагу `mediaSession`: `true` включает с шагом перемотки
+  по умолчанию (10 с), `{ skipSeconds }` — со своим. Плеер публикует метаданные
+  (`title/artist/album/artwork`), состояние (`playing`/`paused`/`none`) и позицию, а
+  `play/pause/nexttrack/previoustrack/seekbackward/seekforward/seekto` направляет в обычные
+  действия контроллера. Где API нет или отдельное действие не поддержано — тихий откат.
 
 ## 7. Версионирование
 
