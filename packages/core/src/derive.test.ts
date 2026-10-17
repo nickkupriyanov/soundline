@@ -185,6 +185,34 @@ describe('derivePlayerView — states and announcement', () => {
     expect(derivePlayerView(state(), config).live.message).toBe('Now playing: Alpha');
   });
 
+  it('announces the current track while it plays', () => {
+    const playing = { ...state(), status: 'playing' as const };
+    expect(derivePlayerView(playing, config).live.message).toBe('Now playing: Alpha');
+  });
+
+  it('names the track again, in the paused wording, once playback stops', () => {
+    const paused = { ...state({ playing: true }), status: 'paused' as const };
+    expect(derivePlayerView(paused, config).live.message).toBe('Paused: Alpha');
+  });
+
+  it('does not announce a pause for a track that never started', () => {
+    // `idle` is the engine before the first `play`, so "Paused: Alpha" here would
+    // be a lie the visitor never asked for.
+    const idle = { ...state(), status: 'idle' as const };
+    expect(derivePlayerView(idle, config).live.message).toBe('Now playing: Alpha');
+  });
+
+  it('keeps a failure above the paused wording', () => {
+    const failed = playerReducer(
+      { ...state({ playing: true }), status: 'paused' },
+      {
+        type: 'engineFailed',
+        error: { code: 'NETWORK_FAILURE', phase: 'playback', message: 'offline' },
+      },
+    );
+    expect(derivePlayerView(failed, config).live.message).toBe(defaultMessages.en.genericError);
+  });
+
   it('announces loading while the list arrives', () => {
     const view = derivePlayerView(createPlayerState(), config);
     expect(view.loading).toBe(true);
@@ -210,6 +238,21 @@ describe('derivePlayerView — states and announcement', () => {
     expect(view.live.message).toBe(defaultMessages.en.genericError);
   });
 
+  it('announces a track list that could not be fetched', () => {
+    const failed = playerReducer(state({ queue: [], queueStatus: 'loading' }), {
+      type: 'queueFailed',
+      token: 0,
+      error: { code: 'NETWORK_FAILURE', phase: 'tracks', message: 'offline' },
+    });
+
+    const view = derivePlayerView(failed, config);
+    // The failure is the state, not a forever-loading card with an empty list.
+    expect(view.error?.code).toBe('NETWORK_FAILURE');
+    expect(view.loading).toBe(false);
+    expect(view.empty).toBe(false);
+    expect(view.live.message).toBe(defaultMessages.en.genericError);
+  });
+
   it('announces the end of the playlist', () => {
     const ended = { ...state({ currentTrackId: 'c' }), status: 'ended' as const };
     const view = derivePlayerView(ended, config);
@@ -231,6 +274,17 @@ describe('derivePlayerView — actions and settings', () => {
     });
     expect(derivePlayerView(failed, config).actions.canRetry).toBe(true);
     expect(derivePlayerView(state(), config).actions.canRetry).toBe(false);
+  });
+
+  it('enables retry for a failed track list, even with no track selected', () => {
+    const failed = playerReducer(state({ queue: [], queueStatus: 'loading' }), {
+      type: 'queueFailed',
+      token: 0,
+      error: { code: 'NETWORK_FAILURE', phase: 'tracks', message: 'offline' },
+    });
+
+    // Retrying a list needs no track — the controller re-fetches it.
+    expect(derivePlayerView(failed, config).actions.canRetry).toBe(true);
   });
 
   it('exposes the presentation settings', () => {

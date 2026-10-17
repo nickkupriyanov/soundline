@@ -106,7 +106,7 @@ export interface QueueItemView {
   label: string;
 }
 
-/** The queue listbox. */
+/** The playlist, as a list of rows in playback order. */
 export interface QueueView {
   items: QueueItemView[];
   count: number;
@@ -143,6 +143,11 @@ export interface PlayerView {
   loading: boolean;
   /** The track list loaded and is empty. */
   empty: boolean;
+  /**
+   * A failure that leaves nothing to play: the current source would not load, or
+   * the track list itself could not be fetched. `actions.canRetry` says whether
+   * anything can be done about it.
+   */
   error: PlayerError | null;
   nowPlaying: NowPlayingView | null;
   progress: ProgressView;
@@ -151,7 +156,14 @@ export interface PlayerView {
   queue: QueueView;
   settings: PlayerSettingsView;
   actions: PlayerActionsView;
-  /** The polite live-region announcement for the current state. */
+  /**
+   * The polite live-region announcement for the current state.
+   *
+   * One string per state — a failure, the end of the playlist, loading, an empty
+   * list, or the track in its playing (`Now playing: …`) or paused
+   * (`Paused: …`) wording. The binding renders it into a single `polite` region
+   * and never queues announcements of its own.
+   */
   live: { message: string };
 }
 
@@ -300,9 +312,22 @@ export function derivePlayerView(
 
   /* -- announcement -------------------------------------------------------- */
 
+  // The region says one thing at a time, in order of how much it matters: a
+  // failure, the end of the playlist, the list still arriving, an empty list,
+  // and otherwise the track itself — named while it plays, named again in the
+  // paused wording when it stops. The pause wording is what tells a visitor who
+  // is not on the play button that playback stopped: the button only swaps its
+  // accessible name, and a name change of an unfocused button is never spoken.
+  // `paused` is the engine's word, so the very first, never-started track keeps
+  // the plain "now playing" wording instead of announcing a pause nobody asked
+  // for.
   const loading = state.queueStatus === 'loading' || state.queueStatus === 'idle';
   const empty = state.queueStatus === 'ready' && count === 0;
-  const liveMessage = state.error
+  // `view.error` below folds the two failures together; the announcement does the
+  // same, so an unreachable list says what happened instead of announcing
+  // "loading" for as long as the widget lives.
+  const failed = state.error ?? state.queueError;
+  const liveMessage = failed
     ? messages.genericError
     : telemetry.status === 'ended' && !playing
       ? messages.endedLabel
@@ -311,14 +336,20 @@ export function derivePlayerView(
         : empty
           ? messages.emptyLabel
           : nowPlaying
-            ? nowPlaying.label
+            ? telemetry.status === 'paused'
+              ? format(messages.pausedTrackLabel, { title: nowPlaying.title })
+              : nowPlaying.label
             : '';
 
   return {
     status: telemetry.status,
     loading: loading || telemetry.status === 'loading',
     empty,
-    error: state.error,
+    // A track that failed to load and a track list that could not be fetched are
+    // the same thing to a visitor: something went wrong and there is nothing to
+    // play. Swallowing the list failure here is what used to leave the widget
+    // showing an empty card while the live region kept saying "Loading tracks…".
+    error: state.error ?? state.queueError,
     nowPlaying,
     progress,
     transport,
@@ -336,7 +367,7 @@ export function derivePlayerView(
     actions: {
       canSeek: canPlay && duration > 0,
       canToggle: canPlay,
-      canRetry: state.error !== null && hasTrack,
+      canRetry: state.error !== null ? hasTrack : state.queueError !== null,
       canNext,
       canPrev,
     },

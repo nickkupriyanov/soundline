@@ -149,6 +149,12 @@ export function PlayerView() {
 
   /* -- focus ---------------------------------------------------------------- */
 
+  // Two things are kept true here. Nothing is focused by the library on the way
+  // in unless `autoFocus` asks for it, and a content swap never leaves the focus
+  // on `<body>`: when the track changes, or the widget trades its controls for a
+  // state block (a failure, an empty list), the card takes the focus back. A
+  // visitor who is somewhere else on the page keeps it — the check is the focus
+  // actually having escaped, not the render having happened.
   useEffect(() => {
     const previous = previousTrackRef.current;
     previousTrackRef.current = trackId;
@@ -165,7 +171,7 @@ export function PlayerView() {
 
     const active = typeof document === 'undefined' ? null : document.activeElement;
     if (!active || active === document.body) cardRef.current?.focus();
-  }, [trackId, ui.autoFocus]);
+  }, [trackId, state, ui.autoFocus]);
 
   return (
     <div

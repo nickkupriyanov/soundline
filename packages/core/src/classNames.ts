@@ -50,6 +50,7 @@ export const SN_CLASS: Record<SnClassSlot, string> = {
   queueCount: 'sn-queue-count',
   queueList: 'sn-queue-list',
   trackItem: 'sn-track-item',
+  trackSelect: 'sn-track-select',
   trackItemActive: 'sn-track-item-active',
   trackItemPlaying: 'sn-track-item-playing',
   trackLine: 'sn-track-line',

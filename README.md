@@ -11,8 +11,8 @@ drop-in component.
 - 🌍 **Locales done properly** — `en`/`ru` copy shipped, any tag works, `messages`
   overrides any single string.
 - ♿ **Accessible by default** — the seek bar and volume are real ARIA sliders with full
-  keyboard control, the queue is a listbox with roving tabindex, track changes are
-  announced through a live region, and reduced motion is honoured.
+  keyboard control, every queue row is reachable and removable by keyboard, track changes
+  and play/pause are announced through a live region, and reduced motion is honoured.
 - 📦 **Tiny**, with no third-party runtime dependencies.
 
 > Status: under construction. The public API, docs and examples land with the first
@@ -82,6 +82,51 @@ import { Player } from '@nickkupriyanov/soundline-react/motion';
 `prefers-reduced-motion: reduce` is honoured everywhere: the stylesheet collapses every
 animation, the spring kit drops its durations, and the height is not even measured.
 The playing row's equalizer and the sweep across the filled playhead stop with it.
+
+## Accessibility
+
+Every control is operable by keyboard, carries a role, a name and the states that belong
+to it, and is covered by a test.
+
+| Control         | How it is exposed                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Play / Pause    | one button; the accessible name swaps (`Play` ⇄ `Pause`) and there is no `aria-pressed`     |
+| Previous / Next | buttons, named `Previous track` / `Next track`, disabled when there is nowhere to go        |
+| Shuffle         | a toggle (`aria-pressed`)                                                                   |
+| Repeat          | a toggle walking `Repeat off` → `Repeat playlist` → `Repeat track`                          |
+| Mute            | a toggle whose name says what pressing it does (`Mute` ⇄ `Unmute`)                          |
+| Seek bar        | `role="slider"` with `aria-valuemin`/`max`/`now` and the position in words (`0:00 of 1:40`) |
+| Volume          | the same slider contract, with the percentage in words                                      |
+| Queue row       | two sibling buttons — one selects the track, one removes it — never one inside the other    |
+| Playlist        | a labelled list; the current row carries `aria-current`, the rows are walked with arrows    |
+
+Play/pause has no `aria-pressed` on purpose: "Pause, pressed" is a state nobody asked to
+hear, and the button's name already says what it will do. The toggles that genuinely have
+an on/off state do carry it.
+
+**Announcements.** One polite live region (`role="status"`) speaks one thing at a time, in
+order of how much it matters: an error, the end of the playlist, the list still arriving,
+an empty list, and otherwise the track itself — `Now playing: {title}` while it plays and
+`Paused: {title}` when it stops. The pause goes through the region because the name swap of
+an unfocused button is never spoken.
+
+**Focus.** Nothing is focused on mount. When a change removes whatever had the focus — the
+row a visitor just deleted, the playhead of the track that failed — the focus is re-homed
+inside the card instead of falling to `<body>`, and a focus outside the widget is never
+stolen. `autoFocus` is opt-in.
+
+**Keyboard.** `Tab` reaches every control in reading order and leaves the widget again;
+arrows, `Home` and `End` move the seek bar, the volume and the queue rows without the focus
+escaping.
+
+Every string is a key in `messages` (`playerLabel`, `currentTrackLabel`, `pausedTrackLabel`,
+`trackLabel`, `removeTrackLabel`, `loadingLabel`, `emptyLabel`, `genericError`,
+`endedLabel`, …), so the whole accessible surface can be translated or overridden.
+
+Automated checks run in `pnpm test`: an axe pass (`jest-axe`) over every state the widget can
+be in — idle, playing, paused, ended, loading, empty, failures, both themes, compact — fails
+the build on any violation. Contrast is checked in the browser pass instead, because
+`jsdom` applies no stylesheet.
 
 ## Development
 

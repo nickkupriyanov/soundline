@@ -39,7 +39,7 @@ function stepHost(): HTMLElement {
 describe('the animated step of the artwork', () => {
   it('wraps the artwork in a step the kit can animate', async () => {
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
     const host = stepHost();
     expect(host).not.toBeNull();
@@ -51,7 +51,7 @@ describe('the animated step of the artwork', () => {
   it('steps forward on the way down the queue and back on the way up', async () => {
     const user = userEvent.setup();
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
     await user.click(screen.getByRole('button', { name: 'Next track' }));
     await screen.findByText('Beta', { selector: '.sn-title' });
@@ -66,9 +66,9 @@ describe('the animated step of the artwork', () => {
 describe('the staggered queue', () => {
   it('gives every row its place in the group', async () => {
     renderPlayer();
-    const listbox = await screen.findByRole('listbox', { name: 'Playlist' });
+    const list = await screen.findByRole('list', { name: 'Playlist' });
 
-    const rows = within(listbox).getAllByRole('option');
+    const rows = within(list).getAllByRole('listitem');
     expect(rows).toHaveLength(2);
     for (const [index, row] of rows.entries()) {
       expect(row).toHaveClass('sn-stagger-item');
@@ -80,7 +80,7 @@ describe('the staggered queue', () => {
 describe('the height the states share', () => {
   it('wraps the card content in the container that follows it', async () => {
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
     const box = document.querySelector('.sn-height') as HTMLElement;
     const inner = box.querySelector('.sn-height-inner');
@@ -97,7 +97,7 @@ describe('the playing track', () => {
   it('breathes in the queue and marks the root while the engine plays', async () => {
     const user = userEvent.setup();
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
     const root = document.querySelector('.sn-root') as HTMLElement;
     expect(root).toHaveAttribute('data-sn-playing', 'false');
@@ -106,14 +106,14 @@ describe('the playing track', () => {
     await user.click(screen.getByRole('button', { name: 'Play' }));
     await waitFor(() => expect(root).toHaveAttribute('data-sn-playing', 'true'));
 
-    const active = screen.getByRole('option', { name: '1. Alpha' });
+    const active = screen.getByRole('button', { name: '1. Alpha' });
     const equalizer = active.querySelector('.sn-eq');
     expect(equalizer).not.toBeNull();
     expect(equalizer).toHaveAttribute('aria-hidden', 'true');
     expect(equalizer?.children).toHaveLength(3);
 
     // Only the row that is playing carries it.
-    expect(screen.getByRole('option', { name: '2. Beta' }).querySelector('.sn-eq')).toBeNull();
+    expect(screen.getByRole('button', { name: '2. Beta' }).querySelector('.sn-eq')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Pause' }));
     await waitFor(() => expect(root).toHaveAttribute('data-sn-playing', 'false'));
@@ -157,8 +157,8 @@ describe('replacing the kit', () => {
     expect(document.querySelector('.sn-step-host')).toBeNull();
     expect(document.querySelector('.sn-height')).toBeNull();
 
-    // And the widget still works: the rows are real options, the transport plays.
-    await user.click(screen.getByRole('option', { name: '2. Beta' }));
+    // And the widget still works: the rows are real buttons, the transport plays.
+    await user.click(screen.getByRole('button', { name: '2. Beta' }));
     expect(await screen.findByText('Beta', { selector: '.sn-title' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Play' }));
@@ -169,13 +169,13 @@ describe('replacing the kit', () => {
 });
 
 describe('the kit contract', () => {
-  it('keeps the row a listbox option that can still take focus', async () => {
+  it('keeps the row of the list a real focus target', async () => {
     renderPlayer();
-    const listbox = await screen.findByRole('listbox', { name: 'Playlist' });
-    const alpha = within(listbox).getByRole('option', { name: '1. Alpha' });
+    const list = await screen.findByRole('list', { name: 'Playlist' });
+    const alpha = within(list).getByRole('button', { name: '1. Alpha' });
 
     act(() => alpha.focus());
     expect(alpha).toHaveFocus();
-    expect(listbox.contains(document.activeElement)).toBe(true);
+    expect(list.contains(document.activeElement)).toBe(true);
   });
 });

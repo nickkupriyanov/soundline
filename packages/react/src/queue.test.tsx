@@ -35,31 +35,42 @@ function nowPlayingTitle(): string {
   return (document.querySelector('.sn-title') as HTMLElement).textContent ?? '';
 }
 
+/** The button of a row that selects the track; the row's own name is on it. */
+function trackButton(name: string): HTMLElement {
+  return screen.getByRole('button', { name });
+}
+
 describe('the queue', () => {
   it('lists the tracks in playback order and marks the active one', async () => {
     renderPlayer();
-    const listbox = await screen.findByRole('listbox', { name: 'Playlist' });
+    const list = await screen.findByRole('list', { name: 'Playlist' });
 
-    const options = within(listbox).getAllByRole('option');
-    expect(options).toHaveLength(2);
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
     expect(screen.getByText('2 tracks')).toBeInTheDocument();
 
-    expect(screen.getByRole('option', { name: '1. Alpha' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    expect(screen.getByRole('option', { name: '2. Beta' })).toHaveAttribute(
-      'aria-selected',
-      'false',
-    );
+    // The active row is marked as the current one; the other rows are not
+    // "false", they simply say nothing about it.
+    expect(trackButton('1. Alpha')).toHaveAttribute('aria-current', 'true');
+    expect(trackButton('2. Beta')).not.toHaveAttribute('aria-current');
+  });
+
+  it('keeps the two buttons of a row as siblings, never nested', async () => {
+    renderPlayer();
+    await screen.findByRole('list', { name: 'Playlist' });
+
+    const select = trackButton('1. Alpha');
+    // Nested interactive controls are what axe's `nested-interactive` forbids.
+    expect(select.querySelector('button')).toBeNull();
+    expect(trackButton('Remove Alpha')).not.toBe(select);
+    expect(select.contains(trackButton('Remove Alpha'))).toBe(false);
   });
 
   it('walks the list with a roving tab index', async () => {
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
-    const alpha = screen.getByRole('option', { name: '1. Alpha' });
-    const beta = screen.getByRole('option', { name: '2. Beta' });
+    const alpha = trackButton('1. Alpha');
+    const beta = trackButton('2. Beta');
 
     // Exactly one row is in the tab order, and it is the active one to start.
     expect(alpha).toHaveAttribute('tabindex', '0');
@@ -83,49 +94,41 @@ describe('the queue', () => {
     expect(alpha).toHaveFocus();
   });
 
-  it('selects with Enter, Space and a click, without leaving the list', async () => {
+  it('leaves Enter and Space to the button itself', async () => {
     const user = userEvent.setup();
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
-    const beta = screen.getByRole('option', { name: '2. Beta' });
+    const beta = trackButton('2. Beta');
     beta.focus();
-    fireEvent.keyDown(beta, { key: 'Enter' });
 
+    // A real button turns both keys into a click, so the widget never has to
+    // re-implement activation.
+    await user.keyboard('{Enter}');
     expect(nowPlayingTitle()).toBe('Beta');
-    expect(screen.getByRole('option', { name: '2. Beta' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(trackButton('2. Beta')).toHaveAttribute('aria-current', 'true');
     expect(beta).toHaveFocus();
 
-    fireEvent.keyDown(beta, { key: ' ' });
-    expect(screen.getByRole('option', { name: '2. Beta' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    // Space would re-select the same track: the point is that it does not move
+    // the focus out of the list.
+    await user.keyboard(' ');
+    expect(beta).toHaveFocus();
 
-    await user.click(screen.getByRole('option', { name: '1. Alpha' }));
+    await user.click(trackButton('1. Alpha'));
     expect(nowPlayingTitle()).toBe('Alpha');
-    expect(screen.getByRole('option', { name: '1. Alpha' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(trackButton('1. Alpha')).toHaveAttribute('aria-current', 'true');
   });
 
   it('removes a track without selecting it', async () => {
     const user = userEvent.setup();
     renderPlayer();
-    await screen.findByRole('listbox', { name: 'Playlist' });
+    await screen.findByRole('list', { name: 'Playlist' });
 
     await user.click(screen.getByRole('button', { name: 'Remove Beta' }));
 
-    expect(screen.queryByRole('option', { name: '2. Beta' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '2. Beta' })).toBeNull();
     expect(nowPlayingTitle()).toBe('Alpha');
-    expect(screen.getByRole('option', { name: '1. Alpha' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(trackButton('1. Alpha')).toHaveAttribute('aria-current', 'true');
   });
 
   it('shows the empty state instead of the list when the playlist is empty', async () => {
@@ -136,31 +139,31 @@ describe('the queue', () => {
         selector: '.sn-empty > span',
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByRole('list')).toBeNull();
   });
 
   it('hides the queue when the configuration asks for it', async () => {
     renderPlayer({ showQueue: false });
     await screen.findByRole('slider', { name: 'Playback position' });
 
-    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(screen.queryByRole('list')).toBeNull();
   });
 
   it('keeps `next` in step with the displayed order under shuffle', async () => {
     const user = userEvent.setup();
     renderPlayer();
-    const listbox = await screen.findByRole('listbox', { name: 'Playlist' });
+    const list = await screen.findByRole('list', { name: 'Playlist' });
 
     await user.click(screen.getByRole('button', { name: 'Shuffle' }));
 
     // Whatever shuffle produced, the row after the active one is what `next`
     // must play — the widget never re-derives an order of its own.
-    const rows = within(listbox).getAllByRole('option');
+    const rows = within(list).getAllByRole('listitem');
     const secondTitle = rows[1]?.querySelector('.sn-track-title')?.textContent ?? '';
 
     await user.click(screen.getByRole('button', { name: 'Next track' }));
 
     expect(nowPlayingTitle()).toBe(secondTitle);
-    expect(rows[1]).toHaveAttribute('aria-selected', 'true');
+    expect(rows[1]?.querySelector('button')).toHaveAttribute('aria-current', 'true');
   });
 });

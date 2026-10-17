@@ -189,23 +189,34 @@ export interface VolumePartProps {
 /**
  * One row of the queue.
  *
- * The roving tab index, the selection, the removal and the arrow keys are the
- * library's and arrive in `slotProps`/`removeProps`; the content of the row is
- * yours. The prepared props are what keeps a replacement a real listbox option.
+ * The row is a plain list item holding two buttons: the one that selects the
+ * track and the one that removes it. Both behaviours are the library's and arrive
+ * in `selectProps`/`removeProps`; the row's own element gets `slotProps`. Keeping
+ * the two buttons siblings is what keeps the row accessible: an option of a
+ * listbox may not contain a focusable control (`nested-interactive`, WCAG 4.1.2),
+ * so the rows are buttons of a list instead.
  *
  * `slotProps` belongs on the row element itself, so the default row renders the
  * animation kit's `Item` rather than a plain `<li>`; a replacement that wants the
- * stagger does the same (`useAnimations()`).
+ * stagger does the same (`useAnimations()`). `selectProps` owns the roving tab
+ * order, so the button that selects must be the element the library's own row has
+ * — a replacement that drops it loses the keyboard walk as well as the selection.
  */
 export interface TrackItemPartProps {
   /** The row as the flow derived it: labels, position and state flags. */
   item: QueueItemView;
   /**
-   * Spread on your own row element (an `<li role="option">`): the tab order, the
-   * `aria-selected`, the slot classes and the key handling. The library uses the
-   * same bundle's `ref` to move focus along the list.
+   * Spread on your own row element (an `<li>`): the slot classes and the item id.
+   * The library uses the same bundle's `ref` to tell whether a removal is taking
+   * the focus away with it.
    */
   slotProps: SlotProps<ComponentPropsWithRef<'li'>>;
+  /**
+   * Spread on your own selecting button: the accessible name, `aria-current`, the
+   * tab order, the click, the arrow keys and the `ref` the list moves focus
+   * through. `Enter` and `Space` are the button's own.
+   */
+  selectProps: SlotProps<ComponentPropsWithRef<'button'>>;
   /** Spread on your own remove button: the label, the class and the click that must not select. */
   removeProps: SlotProps<ComponentPropsWithoutRef<'button'>>;
 }
@@ -213,10 +224,10 @@ export interface TrackItemPartProps {
 /**
  * The queue panel.
  *
- * The listbox itself, its rows and their keyboard navigation belong to the
- * library and arrive as `children`; this part is the frame around them. Place
- * `header` and `children` as your layout wants — dropping either one is a valid
- * (if drastic) choice.
+ * The list itself, its rows and their keyboard navigation belong to the library
+ * and arrive as `children`; this part is the frame around them. Place `header` and
+ * `children` as your layout wants — dropping either one is a valid (if drastic)
+ * choice.
  */
 export interface QueuePartProps {
   /** The playlist as the flow derived it: every row, in playback order. */
@@ -225,7 +236,7 @@ export interface QueuePartProps {
   slotProps: SlotProps<ComponentPropsWithoutRef<'div'>>;
   /** The header row, already rendered through the `Header` part. */
   header: ReactNode;
-  /** The listbox, already rendered with one row per track. */
+  /** The list, already rendered with one row per track. */
   children: ReactNode;
 }
 

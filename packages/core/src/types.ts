@@ -193,7 +193,7 @@ export interface SoundlineMessages {
   rateLabel: string;
   /** Playback rate as text, `{rate}×`. */
   rateValue: string;
-  /** Accessible name of the queue listbox. */
+  /** Accessible name of the playlist: the list, and the queue's own header. */
   queueLabel: string;
   /** Number of tracks, `{count} tracks`. */
   queueCount: string;
@@ -203,6 +203,14 @@ export interface SoundlineMessages {
   removeTrackLabel: string;
   /** Announcement of the current track, `Now playing: {title}`. */
   currentTrackLabel: string;
+  /**
+   * Announcement once playback is paused, `Paused: {title}`.
+   *
+   * The live region says this instead of `currentTrackLabel`, so a screen reader
+   * hears *and* names the play/pause change: the button only swaps its name,
+   * which a visitor with the focus elsewhere would not hear.
+   */
+  pausedTrackLabel: string;
   /** Announced while the track list loads. */
   loadingLabel: string;
   /** Announced when the queue is empty. */
@@ -263,6 +271,7 @@ export type SnClassSlot =
   | 'queueCount'
   | 'queueList'
   | 'trackItem'
+  | 'trackSelect'
   | 'trackItemActive'
   | 'trackItemPlaying'
   | 'trackLine'

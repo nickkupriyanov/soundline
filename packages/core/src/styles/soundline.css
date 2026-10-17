@@ -450,19 +450,17 @@
   list-style: none;
 }
 
+/* The row is a grid: the button that selects the track on the left, the button
+   that removes it on the right. The row itself is not interactive — the two
+   buttons are, and neither of them contains the other. */
 .sn-track-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 8px 10px;
   color: var(--sn-text-muted);
-  background: transparent;
-  border: 0;
   border-radius: var(--sn-radius-control);
-  cursor: pointer;
-  text-align: left;
   transition:
     color var(--sn-duration-fast) var(--sn-ease-standard),
     background var(--sn-duration-fast) var(--sn-ease-standard);
@@ -473,7 +471,9 @@
   background: var(--sn-control);
 }
 
-.sn-track-item[aria-selected='true'],
+/* The current row is drawn from its class, not from `aria-current`: the state is
+   announced on the button that selects the track, which is where a screen reader
+   reads it from. */
 .sn-track-item-active {
   color: var(--sn-text);
   background: var(--sn-control);
@@ -511,15 +511,25 @@
   text-overflow: ellipsis;
 }
 
-/* The row is a grid, so the two text lines stack: the title line — the playing
-   bars and the title — and the artist underneath. */
-.sn-track-item > .sn-track-line,
-.sn-track-item > .sn-track-artist {
+/* The button that selects the track fills the left column of the row and stacks
+   the two text lines: the title line — the playing bars and the title — and the
+   artist underneath. It is drawn like the row because it is the row's content;
+   the row itself only holds the layouts of the two buttons. */
+.sn-track-select {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  grid-row: 1 / span 2;
   grid-column: 1;
-}
-
-.sn-track-item > .sn-track-artist {
-  grid-row: 2;
+  min-width: 0;
+  padding: 8px 10px;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sn-radius-control);
+  cursor: pointer;
 }
 
 .sn-track-remove {
@@ -542,7 +552,11 @@
     opacity var(--sn-duration-fast) var(--sn-ease-standard);
 }
 
+/* The remove button shows on hover and whenever anything in the row has the
+   focus: a keyboard visitor must be able to see that the row holds a second
+   control, not just tab into something invisible. */
 .sn-track-item:hover .sn-track-remove,
+.sn-track-item:focus-within .sn-track-remove,
 .sn-track-remove:focus-visible {
   opacity: 1;
 }

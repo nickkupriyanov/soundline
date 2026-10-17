@@ -175,8 +175,8 @@ export type SoundlineProviderProps<TData = unknown> = SoundlineProps<TData> & {
  *
  * - render the same class hooks (`sn-step-host`/`sn-step`, `sn-stagger-item`,
  *   `sn-height`/`sn-height-inner`), so the stylesheet keeps working;
- * - keep `Item` the row element itself and forward its `ref` — the queue moves
- *   focus through it;
+ * - keep `Item` the row element itself and forward its `ref` — the queue tells
+ *   whether a removal takes the focus with the row by that element;
  * - honour reduced motion, unless it is the CSS kit, which the stylesheet's kill
  *   switch already covers.
  */
@@ -209,7 +209,7 @@ export interface StepHostProps {
 /**
  * The props of a staggered row: the prepared slot props of `TrackItem` plus the
  * row's position in the group. `ref` is part of the contract — it is how the
- * queue moves focus along the list.
+ * queue knows whether the focus went with a removed row.
  */
 export interface ItemProps extends ComponentPropsWithRef<'li'> {
   /** Zero-based position inside the group; drives the delay. */

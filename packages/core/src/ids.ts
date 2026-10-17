@@ -1,8 +1,8 @@
 /**
  * Identifier helpers.
  *
- * Ids are for accessibility wiring (a slider and its label, a listbox and its
- * options), not for identity across sessions: they only have to be unique and
+ * Ids are for accessibility wiring (a slider and its label, a labelled list and
+ * what names it), not for identity across sessions: they only have to be unique and
  * stable while the widget is mounted. A module-scoped counter does that without
  * touching `crypto` or `Date`, which keeps the output deterministic in tests and
  * identical between server render and hydration.

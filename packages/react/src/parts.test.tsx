@@ -73,7 +73,7 @@ describe('component replacement', () => {
     // The slot class rides along in the prepared props.
     expect(header).toHaveClass('sn-header');
 
-    expect(await screen.findByRole('listbox', { name: 'Playlist' })).toBeInTheDocument();
+    expect(await screen.findByRole('list', { name: 'Playlist' })).toBeInTheDocument();
   });
 
   it('replaces the artwork but still draws it inside the now-playing row', async () => {
@@ -230,7 +230,7 @@ describe('component replacement', () => {
     expect(screen.getByRole('button', { name: 'Unmute' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('keeps the queue a working listbox when its frame is replaced', async () => {
+  it('keeps the queue a working list when its frame is replaced', async () => {
     const user = userEvent.setup();
 
     renderPlayer({
@@ -247,17 +247,17 @@ describe('component replacement', () => {
     const frame = await screen.findByTestId('custom-queue');
     expect(frame).toHaveClass('sn-queue');
 
-    const beta = within(frame).getByRole('option', { name: '2. Beta' });
+    const beta = within(frame).getByRole('button', { name: '2. Beta' });
     beta.focus();
-    fireEvent.keyDown(beta, { key: 'Enter' });
+    await user.keyboard('{Enter}');
 
     expect(nowPlayingTitle()).toBe('Beta');
-    expect(within(frame).getByRole('option', { name: '2. Beta' })).toHaveAttribute(
-      'aria-selected',
+    expect(within(frame).getByRole('button', { name: '2. Beta' })).toHaveAttribute(
+      'aria-current',
       'true',
     );
 
-    await user.click(within(frame).getByRole('option', { name: '1. Alpha' }));
+    await user.click(within(frame).getByRole('button', { name: '1. Alpha' }));
     expect(nowPlayingTitle()).toBe('Alpha');
   });
 
@@ -266,15 +266,15 @@ describe('component replacement', () => {
 
     renderPlayer({
       components: {
-        TrackItem: ({ item, slotProps, removeProps }) => (
+        TrackItem: ({ item, slotProps, selectProps, removeProps }) => (
           <li
             {...slotProps}
             data-testid={`row-${item.id}`}
             className={`${slotProps.className} mine`}
           >
-            <span>
+            <button {...selectProps} data-testid={`select-${item.id}`}>
               {item.position}. {item.title}
-            </span>
+            </button>
             <button {...removeProps} data-testid={`remove-${item.id}`}>
               ×
             </button>
@@ -283,11 +283,15 @@ describe('component replacement', () => {
       },
     });
 
-    const alpha = await screen.findByTestId('row-a');
-    const beta = screen.getByTestId('row-b');
+    const alphaRow = await screen.findByTestId('row-a');
+    const alpha = screen.getByTestId('select-a');
+    const beta = screen.getByTestId('select-b');
 
-    expect(alpha).toHaveClass('sn-track-item', 'mine');
-    expect(alpha).toHaveAttribute('aria-selected', 'true');
+    // The row keeps its own slot and the consumer's class; the prepared props
+    // land on the buttons the library drives.
+    expect(alphaRow).toHaveClass('sn-track-item', 'mine');
+    expect(alpha).toHaveClass('sn-track-select');
+    expect(alpha).toHaveAttribute('aria-current', 'true');
 
     // Exactly one row is in the tab order, and the arrow keys move it.
     expect(alpha).toHaveAttribute('tabindex', '0');
@@ -299,7 +303,7 @@ describe('component replacement', () => {
     expect(beta).toHaveAttribute('tabindex', '0');
     expect(alpha).toHaveAttribute('tabindex', '-1');
 
-    // Removing is deliberately not a selection: the prepared button stops it.
+    // Removing is deliberately not a selection.
     await user.click(screen.getByTestId('remove-b'));
     expect(screen.queryByTestId('row-b')).toBeNull();
     expect(nowPlayingTitle()).toBe('Alpha');
@@ -364,8 +368,10 @@ describe('classes and parts together', () => {
       'sn-transport',
       'my-transport',
     );
-    // The part nobody replaced keeps its own class *and* the consumer's.
-    expect(screen.getByRole('option', { name: '1. Alpha' })).toHaveClass('sn-track-item', 'my-row');
+    // The part nobody replaced keeps its own classes *and* the consumer's: the
+    // row on its list item, the button on the button.
+    expect(document.querySelector('.sn-track-item.my-row')).not.toBeNull();
+    expect(screen.getByRole('button', { name: '1. Alpha' })).toHaveClass('sn-track-select');
   });
 
   it('isolates two widgets on one page', async () => {
@@ -391,11 +397,11 @@ describe('classes and parts together', () => {
 
     // Only the first widget lost its header; both kept their own list.
     expect(document.querySelectorAll('.sn-header')).toHaveLength(1);
-    expect(within(first).getAllByRole('option')).toHaveLength(2);
-    expect(within(second).getAllByRole('option')).toHaveLength(1);
+    expect(within(first).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(second).getAllByRole('listitem')).toHaveLength(1);
 
     // And their data stay apart: selecting in one leaves the other alone.
-    await user.click(within(second).getByRole('option', { name: '1. Zeta' }));
+    await user.click(within(second).getByRole('button', { name: '1. Zeta' }));
 
     expect(within(second).getByText('Zeta', { selector: '.sn-title' })).toBeInTheDocument();
     expect(within(first).getByText('Alpha', { selector: '.sn-title' })).toBeInTheDocument();

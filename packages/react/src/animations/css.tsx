@@ -37,10 +37,10 @@ function StepHost({ stepKey, direction, className, children }: StepHostProps) {
 /**
  * A row of the queue, delayed by its place in the group.
  *
- * This is the row element itself — an `<li>` inside the listbox — not a wrapper
- * around one: the library's prepared props (role, tab order, selection, the
- * focus `ref`) spread straight onto it, so both the layout and the listbox stay
- * exactly what they would be without a kit.
+ * This is the row element itself — an `<li>` inside the list — not a wrapper
+ * around one: the library's prepared props (the slot classes, the item id and the
+ * `ref`) spread straight onto it, so the layout stays exactly what it would be
+ * without a kit.
  */
 const Item = forwardRef<HTMLLIElement, ItemProps>(function Item(
   { index, className, style, children, ...rest },

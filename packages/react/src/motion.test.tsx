@@ -90,8 +90,8 @@ describe('the Motion kit', () => {
   it('renders the same widget, marked as driven by Motion', async () => {
     render(<Player adapter={createMockAdapter({ tracks })} engine={engine()} locale="en" />);
 
-    const listbox = await screen.findByRole('listbox', { name: 'Playlist' });
-    const rows = within(listbox).getAllByRole('option');
+    const list = await screen.findByRole('list', { name: 'Playlist' });
+    const rows = within(list).getAllByRole('listitem');
     expect(rows).toHaveLength(2);
     for (const row of rows) {
       // The class hooks of the CSS kit stay, so the stylesheet still applies.
@@ -107,8 +107,8 @@ describe('the Motion kit', () => {
     const user = userEvent.setup();
     render(<Player adapter={createMockAdapter({ tracks })} engine={engine()} locale="en" />);
 
-    await screen.findByRole('listbox', { name: 'Playlist' });
-    await user.click(screen.getByRole('option', { name: '2. Beta' }));
+    await screen.findByRole('list', { name: 'Playlist' });
+    await user.click(screen.getByRole('button', { name: '2. Beta' }));
     expect(await screen.findByText('Beta', { selector: '.sn-title' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Play' }));

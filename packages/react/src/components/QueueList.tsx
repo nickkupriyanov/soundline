@@ -1,8 +1,8 @@
-import { useCallback, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { format, type QueueView } from '@nickkupriyanov/soundline-core';
 import { useClassNames, useComponents, useUI } from '../context';
 
-/** Everything the listbox needs to render and drive the playlist. */
+/** Everything the list needs to render and drive the playlist. */
 export interface QueueListProps {
   /** The playlist as the flow derived it: every row, in playback order. */
   queue: QueueView;
@@ -13,28 +13,39 @@ export interface QueueListProps {
 }
 
 /**
- * The playlist, as a listbox.
+ * The playlist, as a list of rows.
  *
  * The rows are rendered in the order they will be played — the derived queue *is*
  * the playback order — so what a visitor sees and what `next`/`previous` do can
  * never disagree; shuffle only changes both together.
  *
- * Navigation is a roving `tabindex`: exactly one row is in the tab order, the
- * arrow keys walk the list (`Home`/`End` jump to the ends), and `Enter`/`Space`
- * or a click selects. Focus stays on a row when the list changes under it: the
- * remembered row falls back to the active track, then to the first row.
+ * A row holds two buttons and nothing else: the one that selects the track and
+ * the one that removes it. They are deliberately *siblings* rather than a button
+ * inside a listbox option: an option is a value, and a focusable control inside
+ * one is both invalid (`nested-interactive`, WCAG 4.1.2) and awkward to announce.
+ * A plain list of rows with real buttons keeps the same picture, the same tab
+ * stops and the same keyboard behaviour without that contradiction. The current
+ * track is marked with `aria-current` on its button — the "value selected out of a
+ * list" of a listbox has no honest equivalent once the rows are buttons.
+ *
+ * Navigation is a roving `tabindex` over the *selecting* buttons: exactly one row
+ * is in the tab order, the arrow keys walk the list (`Home`/`End` jump to the
+ * ends), and the remove button of every row stays separately reachable. Focus
+ * stays on a row when the list changes under it: the remembered row falls back to
+ * the active track, then to the first row, and a removal takes the focus along
+ * instead of dropping it on `<body>`.
  *
  * This component is the library's own half of the queue, not a part: the rows it
  * builds are the `TrackItem` part, and every contract that must survive a
- * replacement — the role, the roving tab order, the key handling, the click that
- * must not select on the remove button — is prepared here and handed to that
- * part in its props.
+ * replacement — the tab order, the arrows, the click that must not select, the
+ * labels — is prepared here and handed to that part in its props.
  */
 export function QueueList({ queue, onSelect, onRemove }: QueueListProps) {
   const cls = useClassNames();
   const { messages } = useUI();
   const { TrackItem } = useComponents();
-  const itemRefs = useRef(new Map<string, HTMLLIElement>());
+  const rowRefs = useRef(new Map<string, HTMLLIElement>());
+  const selectRefs = useRef(new Map<string, HTMLButtonElement>());
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const { items } = queue;
@@ -46,25 +57,51 @@ export function QueueList({ queue, onSelect, onRemove }: QueueListProps) {
       ? queue.activeId
       : (items[0]?.id ?? null);
 
+  /**
+   * Whether the removal in flight takes the focus away with it.
+   *
+   * The row unmounts with the focus inside it — on the selecting button or on its
+   * own remove button — so the click that asks for the removal is the last moment
+   * that can tell. A removal nobody was focused on leaves the flag alone.
+   */
+  const focusedRowRemoved = useRef(false);
+
   const focusItem = useCallback((id: string): void => {
     setFocusedId(id);
-    itemRefs.current.get(id)?.focus();
+    selectRefs.current.get(id)?.focus();
   }, []);
 
-  const registerItem = useCallback(
+  const registerRow = useCallback(
     (id: string) =>
       (element: HTMLLIElement | null): void => {
-        if (element) itemRefs.current.set(id, element);
-        else itemRefs.current.delete(id);
+        if (element) rowRefs.current.set(id, element);
+        else rowRefs.current.delete(id);
       },
     [],
   );
 
-  const onKeyDown = (event: KeyboardEvent<HTMLLIElement>, trackId: string): void => {
-    // A key on the remove button belongs to the button, not to the option.
-    if (event.target !== event.currentTarget) return;
+  const registerSelect = useCallback(
+    (id: string) =>
+      (element: HTMLButtonElement | null): void => {
+        if (element) selectRefs.current.set(id, element);
+        else selectRefs.current.delete(id);
+      },
+    [],
+  );
 
-    const index = items.findIndex((row) => row.id === trackId);
+  // The removal has happened by the time this runs: the focus goes to the row
+  // that inherits the roving `tabindex`. When the list emptied itself out there
+  // is nothing to hand it to, and the empty state takes over (the view re-homes
+  // the focus on the card).
+  useEffect(() => {
+    if (!focusedRowRemoved.current) return;
+    focusedRowRemoved.current = false;
+    if (focusId === null) return;
+    selectRefs.current.get(focusId)?.focus();
+  }, [items, focusId]);
+
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>, track: string): void => {
+    const index = items.findIndex((row) => row.id === track);
     if (index < 0) return;
 
     let target: string | null = null;
@@ -81,38 +118,38 @@ export function QueueList({ queue, onSelect, onRemove }: QueueListProps) {
       case 'End':
         target = items[items.length - 1]?.id ?? null;
         break;
-      case 'Enter':
-      case ' ':
-        event.preventDefault();
-        onSelect(trackId);
-        return;
       default:
+        // `Enter` and `Space` belong to the button itself: they become a click.
         return;
     }
 
     // The keys are the list's own: the page must not scroll under them.
     event.preventDefault();
-    if (target !== null && target !== trackId) focusItem(target);
+    if (target !== null && target !== track) focusItem(target);
   };
 
   return (
-    <ul className={cls('queueList')} role="listbox" aria-label={queue.label}>
+    <ul className={cls('queueList')} aria-label={queue.label}>
       {items.map((item) => (
         <TrackItem
           key={item.id}
           item={item}
           slotProps={{
-            ref: registerItem(item.id),
-            role: 'option',
-            'aria-selected': item.isActive,
-            'aria-label': item.label,
-            tabIndex: item.id === focusId ? 0 : -1,
+            ref: registerRow(item.id),
             'data-sn-track-id': item.id,
             className: cls(
               'trackItem',
               item.isActive && 'trackItemActive',
               item.isPlaying && 'trackItemPlaying',
             ),
+          }}
+          selectProps={{
+            type: 'button',
+            ref: registerSelect(item.id),
+            className: cls('trackSelect'),
+            'aria-label': item.label,
+            'aria-current': item.isActive ? 'true' : undefined,
+            tabIndex: item.id === focusId ? 0 : -1,
             onClick: () => onSelect(item.id),
             onFocus: () => setFocusedId(item.id),
             onKeyDown: (event) => onKeyDown(event, item.id),
@@ -121,9 +158,12 @@ export function QueueList({ queue, onSelect, onRemove }: QueueListProps) {
             type: 'button',
             className: cls('trackRemove'),
             'aria-label': format(messages.removeTrackLabel, { title: item.title }),
-            onClick: (event) => {
+            onClick: () => {
+              // Asked before the removal, while the row is still in the document.
+              const row = rowRefs.current.get(item.id);
+              const active = typeof document === 'undefined' ? null : document.activeElement;
+              focusedRowRemoved.current = Boolean(row && active && row.contains(active));
               // Removing is deliberately not a selection.
-              event.stopPropagation();
               onRemove(item.id);
             },
           }}
