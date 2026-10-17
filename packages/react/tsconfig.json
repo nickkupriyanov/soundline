@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vitest/globals"],
+    "paths": {
+      "@nickkupriyanov/soundline-react": ["./src/index.ts"],
+      "@nickkupriyanov/soundline-react/motion": ["./src/motion.ts"],
+      "@nickkupriyanov/soundline-core": ["../core/src/index.ts"],
+      "@nickkupriyanov/soundline-core/dom": ["../core/src/dom/index.ts"]
+    }
+  },
+  "include": ["src", "scripts", ".storybook", "*.config.ts"]
+}

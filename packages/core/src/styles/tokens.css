@@ -1,0 +1,45 @@
+/* ==========================================================================
+   Design tokens.
+
+   Dark is the default theme. Everything is a plain custom property on
+   `.sn-root`, so an app can retheme the player by overriding a handful of
+   variables — no Tailwind, no CSS-in-JS, no build step:
+
+     .sn-root { --sn-accent: #ff215a; --sn-surface: #101018; }
+
+   The full token set lands in Iteration 5; this is the seed it grows from.
+   ========================================================================== */
+
+.sn-root {
+  /* Shape ------------------------------------------------------------------ */
+  --sn-radius-card: 28px;
+  --sn-radius-panel: 22px;
+  --sn-radius-control: 14px;
+  --sn-radius-pill: 999px;
+  --sn-artwork-radius: 18px;
+  /* How many tracks are visible before the queue scrolls. */
+  --sn-queue-max-height: 320px;
+
+  /* Motion ----------------------------------------------------------------- */
+  --sn-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --sn-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --sn-duration-fast: 140ms;
+  --sn-duration: 240ms;
+  --sn-duration-slow: 420ms;
+
+  /* Palette: dark (default) ------------------------------------------------ */
+  color-scheme: dark;
+
+  --sn-surface: #141419;
+  --sn-surface-raised: #1d1d25;
+  --sn-panel: #1b1b22;
+
+  --sn-text: #f4f4f6;
+  --sn-text-muted: #a2a2b0;
+
+  --sn-accent: #ff215a;
+  --sn-accent-hover: #ff4271;
+  --sn-accent-soft: rgba(255, 33, 90, 0.16);
+
+  --sn-border: rgba(255, 255, 255, 0.07);
+}

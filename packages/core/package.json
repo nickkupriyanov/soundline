@@ -1,0 +1,68 @@
+{
+  "name": "@nickkupriyanov/soundline-core",
+  "version": "0.1.0",
+  "description": "Framework-free core of Soundline: the player controller, the derived view model, the reducer, the playback engine and track source contracts, copy and stable class names.",
+  "keywords": [
+    "audio",
+    "player",
+    "playlist",
+    "music",
+    "media",
+    "state-machine",
+    "headless",
+    "dom"
+  ],
+  "license": "MIT",
+  "author": "Nick Kupriyanov",
+  "homepage": "https://github.com/nickkupriyanov/soundline#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nickkupriyanov/soundline.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/nickkupriyanov/soundline/issues"
+  },
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./dom": {
+      "types": "./dist/dom.d.ts",
+      "import": "./dist/dom.js",
+      "require": "./dist/dom.cjs"
+    },
+    "./styles.css": "./dist/soundline.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && node scripts/postbuild.mjs",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^30.1.2",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.4"
+  }
+}

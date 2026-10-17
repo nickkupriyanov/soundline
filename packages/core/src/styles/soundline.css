@@ -1,0 +1,20 @@
+/* ==========================================================================
+   Components: card, now playing, transport, seek, volume, queue, states.
+
+   Filled in over Iteration 5.
+   ========================================================================== */
+
+.sn-root {
+  font-family: var(
+    --sn-font-family,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif
+  );
+  color: var(--sn-text);
+}

@@ -1,0 +1,15 @@
+/* ==========================================================================
+   Base layer: reset scoped to the widget, focus, reduced motion.
+
+   Filled in over Iteration 5.
+   ========================================================================== */
+
+.sn-root {
+  box-sizing: border-box;
+}
+
+.sn-root *,
+.sn-root *::before,
+.sn-root *::after {
+  box-sizing: inherit;
+}
