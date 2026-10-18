@@ -9,6 +9,7 @@
  */
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
+  FALLBACK_LOCALE,
   FALLBACK_THEME,
   createPlayerController,
   resolveMediaSession,
@@ -31,12 +32,29 @@ export type { UsePlayerFlowResult } from './context';
 /* -------------------------------------------------------------------------- */
 
 /**
- * The browser language, read once and applied *after* mounting.
+ * What a binding may only learn once it runs on the client.
  *
- * The first render — the one the server also produces — uses core's deterministic
- * fallbacks, so rendering and hydration agree; the widget then switches to what
- * the visitor actually uses. Detection lives in the binding on purpose: reading
+ * `locale` is `null` until the client knows it: the first render — the one the
+ * server also produces — uses core's deterministic fallbacks, so the markup and
+ * the hydration agree, and the widget switches to what the visitor actually uses
+ * right after mounting. Detection lives in the binding on purpose: reading
  * `navigator` is not the framework-free half's business.
+ *
+ * `theme` is deliberately *not* detected. The player is dark unless the
+ * application says otherwise (`FALLBACK_THEME`), and a system light theme must
+ * not repaint a widget the application asked to keep dark.
+ */
+interface BrowserDefaults {
+  /** The visitor's language tag, or `null` before the client knows it. */
+  locale: string | null;
+}
+
+/**
+ * The visitor's language, applied *after* mounting.
+ *
+ * Read once per process: the same answer serves every player on the page and both
+ * consumers of this hook — the controller's configuration and the presentation
+ * context — so the copy the two derive can never disagree.
  */
 let cachedLocale: string | null | undefined;
 
@@ -48,14 +66,14 @@ function browserLocale(): string | null {
   return cachedLocale;
 }
 
-function useBrowserLocale(): string | null {
+function useBrowserDefaults(): BrowserDefaults {
   const [locale, setLocale] = useState<string | null>(null);
 
   useEffect(() => {
     setLocale(browserLocale());
   }, []);
 
-  return locale;
+  return { locale };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -125,7 +143,7 @@ function inputsOf<TData>(props: SoundlineProps<TData>): PlayerControllerInputs {
 export function usePlayerController<TData = unknown>(
   props: SoundlineProps<TData>,
 ): PlayerController {
-  const browser = useBrowserLocale();
+  const browser = useBrowserDefaults();
   const propsRef = useRef(props);
   propsRef.current = props;
   const browserRef = useRef(browser);
@@ -137,7 +155,7 @@ export function usePlayerController<TData = unknown>(
       adapter: props.adapter,
       ...(props.engine === undefined ? {} : { engine: props.engine }),
       ...(props.initialEngineRef === undefined ? {} : { initialEngineRef: props.initialEngineRef }),
-      config: configOf(props, browser),
+      config: configOf(props, browser.locale),
       inputs: inputsOf(props),
       handlers: {
         // Every handler reads the latest props, so a re-render never leaves a
@@ -169,7 +187,7 @@ export function usePlayerController<TData = unknown>(
     const current = propsRef.current;
     if (current.engine !== undefined) controller.updateEngine(current.engine);
     controller.updateAdapter(current.adapter);
-    controller.updateConfig(configOf(current, browserRef.current));
+    controller.updateConfig(configOf(current, browserRef.current.locale));
     controller.updateInputs(inputsOf(current));
   });
 
@@ -226,8 +244,8 @@ export function usePlayerFlow<TData = unknown>(props: SoundlineProps<TData>): Us
 export function usePlayerUI<TData = unknown>(
   props: SoundlineProps<TData>,
 ): SoundlineUIContextValue {
-  const browser = useBrowserLocale();
-  const locale = props.locale ?? browser ?? 'en';
+  const browser = useBrowserDefaults();
+  const locale = props.locale ?? browser.locale ?? FALLBACK_LOCALE;
   const messages = useMemo(() => resolveMessages(locale, props.messages), [locale, props.messages]);
   const theme = props.theme ?? FALLBACK_THEME;
 

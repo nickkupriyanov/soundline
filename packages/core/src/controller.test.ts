@@ -897,6 +897,12 @@ describe('reconfiguration', () => {
     const ref = controller.getEngineRef();
 
     expect(JSON.parse(JSON.stringify(ref))).toEqual(ref);
+    // Nothing in the reference may be lost on the way through a JSON response:
+    // no nested objects, no functions, no arrays — plain scalar telemetry only.
+    expect(Object.values(ref).every((value) => value === null || typeof value !== 'object')).toBe(
+      true,
+    );
+    expect(Object.values(ref).some((value) => typeof value === 'function')).toBe(false);
   });
 
   it('restores the creation defaults and refetches on reset', async () => {

@@ -187,7 +187,14 @@ export interface PlayerControllerActions {
 
 export interface PlayerController {
   getSnapshot(): PlayerSnapshot;
-  /** Serialisable engine telemetry, for server rendering. */
+  /**
+   * Serialisable engine telemetry, for server rendering.
+   *
+   * The object holds scalars only, so an application may render it into the page
+   * and hand it back through `initialEngineRef`: the client's first snapshot is
+   * then the one the server drew, and hydration has nothing to disagree about
+   * until the real engine reports something.
+   */
   getEngineRef(): EngineState;
   subscribe(listener: () => void): () => void;
   /** Configuration that is not a controlled value. Replaces the previous input. */

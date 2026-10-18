@@ -50,8 +50,11 @@ export interface SoundlineProps<TData = unknown> {
    */
   engine?: PlaybackEngine;
   /**
-   * Engine telemetry the server rendered from, so the first client snapshot
-   * matches the markup until the real engine reports something.
+   * Engine telemetry the server rendered from — normally the `getEngineRef()`
+   * of the pass that produced the markup. The client starts from it, so the
+   * first snapshot matches the markup until the real engine reports something.
+   * It is not applied again after mounting: from `start()` on, the engine owns
+   * the telemetry.
    */
   initialEngineRef?: EngineState;
 

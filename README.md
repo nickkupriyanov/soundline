@@ -147,6 +147,47 @@ on silently.
 `pauseWhenHidden` stops playback when the document becomes hidden. It is off by default, and
 nothing resumes on its own when the tab comes back: that stays the application's call.
 
+## Server rendering
+
+The widget's first render never reads the browser, so the markup a server pass produces is
+the markup the client hydrates:
+
+- `locale` is a prop, or the visitor's language **after** mounting — the first render uses
+  `en` on both sides, and `lang` then switches to the real tag. `theme` is `dark` unless you
+  pass it: it is never detected, because a system light theme must not repaint a player the
+  application asked to keep dark.
+- A server pass fetches nothing and builds no `<audio>`: the controller starts only after
+  mounting, and the default engine creates its element on first use.
+
+The playhead is the one value a server pass cannot derive — the engine that owns it lives on
+the client. State it explicitly when the first paint should show it, and hand the same object
+to the client:
+
+```tsx
+import { renderToString } from 'react-dom/server';
+import { hydrateRoot } from 'react-dom/client';
+
+const props = {
+  adapter,
+  // What lets the pass render the transport and the playhead, not the loading state.
+  defaultQueue: tracks,
+  locale: 'en',
+  theme: 'dark',
+  // Core's `EngineState`; a controller's `getEngineRef()` returns one.
+  initialEngineRef: engineRef,
+};
+
+// server
+res.send(`<div id="root">${renderToString(<Player {...props} />)}</div>`);
+
+// client
+hydrateRoot(document.getElementById('root')!, <Player {...props} />);
+```
+
+`initialEngineRef` seeds the first paint only: from `start()` on, the engine owns the
+telemetry. `pnpm test` keeps all of this honest — `ssr.test.tsx` renders and hydrates the
+widget and fails the build on any recoverable hydration error or console warning.
+
 ## Development
 
 ```bash
