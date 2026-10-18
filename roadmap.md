@@ -585,22 +585,41 @@ storybook` работает без предварительного `pnpm build`
 
 ---
 
-### Iteration 15 — Браузерные проверки, CI, установка из tarball
+### Iteration 15 — Браузерные проверки, CI, установка из tarball · ✅ готово
 
 **Цель:** доказательство, что пакет работает вне монорепы.
 
 Задачи:
 
-- [ ] `tools/check-layout.mjs` + `check-container.mjs`: контейнеры 280/320/400/800 px,
+- [x] `tools/check-layout.mjs` + `check-container.mjs`: контейнеры 280/320/400/800 px,
       отсутствие горизонтального переполнения, `:focus-visible`, reduced motion, прокрутка
       очереди при `--sn-queue-max-height`.
-- [ ] `tools/install-check/{react-18,react-19}` + `verify-install.mjs`: установка из tarball в
+- [x] `tools/install-check/{react-18,react-19}` + `verify-install.mjs`: установка из tarball в
       чистые приложения, production build, SSR/гидратация в реальном браузере.
-- [ ] `ci.yml`: общая job (core+react, tarballs) → независимые consumer jobs (react-18,
+- [x] `ci.yml`: общая job (core+react, tarballs) → независимые consumer jobs (react-18,
       react-19) с своими кэшами; cache keys включают шаблон, Node, lockfile.
-- [ ] Проверка экспортных точек, зависимости на core и опциональности `motion`.
+- [x] Проверка экспортных точек, зависимости на core и опциональности `motion`.
 
-**Готово, когда:** `pnpm verify:install` и CI зелёные на обоих легах.
+**Готово, когда:** `pnpm verify:install` и CI зелёные на обоих легах. → выполнено
+(`check:layout`, `check:container`, `check:hydration` и `verify:install` зелёные локально;
+`verify-install.mjs` прогоняет оба лега из tarball).
+
+Минимально необходимое сверх списка (отмечено в отчёте): задокументирован контракт проверок;
+`tools/screenshot.mjs` получил `--media <feature>:<value>` (эмуляция `prefers-reduced-motion`
+до загрузки документа — иначе reduced-motion путь не наблюдается в реальном браузере) и
+`inWidget` в focus-трейле теперь через `closest('.sn-root')`, а не «первый по документу»
+(на галерее девять плееров, и драйвер одного из них возвращает фокус на карточку);
+`tools/check-hydration.mjs` и npm-скрипт `check:hydration` (леги `react-*` несут браузерную
+гидратацию prerender-страницы); `tools/install-check/README.md`; второй прогон
+`check-container` в браузере с эмуляцией reduced motion; раздел README «Development»
+дополнен командами проверок. Changeset не нужен: меняются только инструменты и CI.
+
+Разложение списка по инструментам (отмечено в отчёте): `check-layout` отвечает за
+инварианты ширины (карточка = ширине корня, один размер на компоновку, сужение под
+родителя, отсутствие переполнения по состояниям галереи); `check-container` — за адаптацию
+по ширинам 280/320/400/800 px, прокрутку очереди под `--sn-queue-max-height`,
+`:focus-visible` по реальным нажатиям Tab и схлопывание анимаций при reduced motion.
+Изменение публикуемых пакетов не требовалось — правок в `packages/` нет.
 
 ---
 

@@ -23,6 +23,7 @@
     "screenshot": "node tools/screenshot.mjs",
     "check:layout": "node tools/check-layout.mjs",
     "check:container": "node tools/check-container.mjs",
+    "check:hydration": "node tools/check-hydration.mjs --dir .verify/react-19/dist --scope #root",
     "verify:install": "node tools/verify-install.mjs",
     "verify:install:leg": "node tools/verify-install.mjs --leg"
   },

@@ -206,19 +206,43 @@ pnpm build            # core, then the React binding
 pnpm screenshot       # Chrome screenshot of a URL into docs/images (see tools/screenshot.mjs)
 ```
 
+Browser-level checks and packaging verification run against the built playground and
+the packed tarballs:
+
+```bash
+pnpm build && pnpm --filter @nickkupriyanov/soundline-playground build
+pnpm --filter @nickkupriyanov/soundline-playground preview   # serve on :4173
+pnpm check:layout     # the card's width in every gallery state (real Chrome)
+pnpm check:container  # 280/320/400/800 px, queue scroll, focus, reduced motion
+pnpm verify:install   # build + pack core and React, install them in clean React 18/19 apps,
+                      # production build, SSR + hydration (Node and a real browser)
+pnpm verify:install:leg react-18   # one consumer leg
+```
+
 ```
 packages/core              framework-free core (@nickkupriyanov/soundline-core)
   src/styles               tokens.css → base.css → soundline.css (concatenated at build time)
 packages/react             the React binding (@nickkupriyanov/soundline-react)
   src/stories              the Storybook stories (widget, states, extensions, headless)
 apps/playground            Vite playground + the state gallery (/gallery.html)
-tools                      screenshot.mjs (Chrome DevTools Protocol, no extra dependency)
+tools                      screenshot.mjs (Chrome DevTools Protocol, no extra dependency),
+                           check-layout.mjs / check-container.mjs / check-hydration.mjs
+                           (real-browser checks) and verify-install.mjs + install-check/
+                           (tarball packaging in clean consumer apps)
 ```
 
 The playground and its gallery run against the sources, so the dev server hot-reloads the
 library itself. The gallery at `/gallery.html?theme=light` renders every state the widget
 can be in — idle, playing, paused, ended, loading, empty, and both failures — each marked
 with `data-sn-case`/`data-sn-state`/`data-sn-layout` for the browser checks.
+
+`verify-install.mjs` is the packaging proof: it builds and `pnpm pack`s both packages,
+asserts the packed export maps, the React dependency on core (a real version, never
+`workspace:`) and `motion` staying an optional peer, then installs them into React 18 and
+React 19 scratch apps in `.verify/` (each with its own npm cache), type-checks them,
+builds them for production, hydrates the widget in Node and, finally, hydrates the
+prerendered page in a real browser. CI runs the same script — a job that packs the
+libraries once, then one independent job per leg.
 
 ## License
 

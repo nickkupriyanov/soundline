@@ -13,7 +13,8 @@
  *
  * Flags: `--url`, `--out`, `--eval`, `--width`, `--height`, `--scale`, `--wait`,
  * `--wait-for <selector>`, `--tab <count>` (real Tab presses, recorded for a
- * focus probe), `--port`.
+ * focus probe), `--media <feature>:<value>` (emulate a media feature, e.g.
+ * `prefers-reduced-motion:reduce`), `--port`.
  */
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -39,7 +40,7 @@ const out = args.get('out');
 const evaluate = args.get('eval');
 if (!url || (!out && !evaluate)) {
   console.error(
-    'usage: node tools/screenshot.mjs --url <url> [--out <file>] [--eval <expression>] [--width] [--height] [--wait] [--wait-for <selector>] [--scale] [--tab <count>]',
+    'usage: node tools/screenshot.mjs --url <url> [--out <file>] [--eval <expression>] [--width] [--height] [--wait] [--wait-for <selector>] [--scale] [--tab <count>] [--media <feature>:<value>]',
   );
   process.exit(1);
 }
@@ -51,6 +52,8 @@ const settleMs = Number(args.get('wait') ?? 600);
 const waitFor = args.get('wait-for');
 /** How many real Tab presses to make before evaluating: the focus trail. */
 const tabs = Number(args.get('tab') ?? 0);
+/** A media feature to emulate, `name:value` — e.g. `prefers-reduced-motion:reduce`. */
+const media = args.get('media');
 const port = Number(args.get('port') ?? 9333);
 
 const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
@@ -149,6 +152,14 @@ try {
 
   await cdp.send('Page.enable');
   await cdp.send('Runtime.enable');
+  // A media feature (say, `prefers-reduced-motion: reduce`) has to be in place
+  // before the document loads, otherwise the first style pass never sees it.
+  if (media) {
+    const [name, value] = media.split(':');
+    await cdp.send('Emulation.setEmulatedMedia', {
+      features: [{ name: name.trim(), value: value.trim() }],
+    });
+  }
   await cdp.send('Emulation.setDeviceMetricsOverride', {
     width,
     height,
@@ -196,11 +207,11 @@ try {
         expression: [
           '(() => {',
           '  const element = document.activeElement;',
-          "  const root = document.querySelector('.sn-root');",
+          "  const widget = element && element.closest ? element.closest('.sn-root') : null;",
           '  window.__snFocusTrail.push({',
           '    tag: element ? element.tagName : null,',
           "    className: element ? String(element.className || '') : '',",
-          '    inWidget: !!(root && element && root.contains(element)),',
+          '    inWidget: !!widget,',
           "    focusVisible: !!(element && element.matches && element.matches(':focus-visible')),",
           '    visible: !!(element && element.getClientRects().length),',
           '  });',
