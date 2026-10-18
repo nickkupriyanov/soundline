@@ -1,0 +1,76 @@
+body {
+  margin: 0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+}
+
+.sb-surface {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 48px 24px;
+  transition: background 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sb-surface[data-sb-theme='dark'] {
+  background:
+    radial-gradient(800px 500px at 20% -10%, rgba(255, 33, 90, 0.14), transparent 60%), #08080b;
+}
+
+.sb-surface[data-sb-theme='light'] {
+  background:
+    radial-gradient(800px 500px at 20% -10%, rgba(255, 33, 90, 0.08), transparent 60%), #f0f0f2;
+}
+
+.sb-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.sb-note {
+  max-width: 320px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #9a9aa6;
+}
+
+.sb-surface[data-sb-theme='light'] .sb-note {
+  color: #5a5a66;
+}
+
+/* Consumed by the slot-class story to show `classNames` at work. */
+.story-card {
+  box-shadow: 0 0 0 2px rgba(255, 33, 90, 0.35);
+}
+
+.story-play {
+  outline: 2px dashed var(--sn-accent-ink);
+  outline-offset: 2px;
+}
+
+.story-title {
+  text-decoration: underline;
+  text-decoration-color: var(--sn-accent);
+  text-underline-offset: 3px;
+}
+
+/* The duration badge the custom row story adds. */
+.story-duration {
+  margin-left: auto;
+  padding-right: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sn-text-subtle);
+}

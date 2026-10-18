@@ -18,6 +18,8 @@ drop-in component.
 > Status: under construction. The public API, docs and examples land with the first
 > release; the roadmap is in [`roadmap.md`](./roadmap.md).
 
+![The Soundline player in the dark theme](docs/images/player-dark.png)
+
 ---
 
 ## Install
@@ -53,6 +55,8 @@ palette is
 `--sn-surface`/`--sn-panel`/`--sn-control`, `--sn-text`/`--sn-text-muted`,
 `--sn-accent` and `--sn-border`. The light theme is the same set under
 `[data-sn-theme='light']`, which the widget sets from the resolved theme.
+
+![The same player in the light theme](docs/images/player-light.png)
 
 ## Animations
 
@@ -192,19 +196,29 @@ widget and fails the build on any recoverable hydration error or console warning
 
 ```bash
 pnpm install
-pnpm dev         # React playground
-pnpm test        # vitest
-pnpm typecheck   # all packages
-pnpm build       # core, then the React binding
+pnpm dev              # the React playground (Vite) — controls for theme, locale, layout, state
+pnpm preview          # the built playground
+pnpm storybook        # the component stories
+pnpm build-storybook  # a static Storybook
+pnpm test             # vitest
+pnpm typecheck        # every package
+pnpm build            # core, then the React binding
+pnpm screenshot       # Chrome screenshot of a URL into docs/images (see tools/screenshot.mjs)
 ```
 
 ```
-
-packages/core       framework-free core (@nickkupriyanov/soundline-core)
-  src/styles        tokens.css → base.css → soundline.css (concatenated at build time)
-packages/react      the React binding (@nickkupriyanov/soundline-react)
-
+packages/core              framework-free core (@nickkupriyanov/soundline-core)
+  src/styles               tokens.css → base.css → soundline.css (concatenated at build time)
+packages/react             the React binding (@nickkupriyanov/soundline-react)
+  src/stories              the Storybook stories (widget, states, extensions, headless)
+apps/playground            Vite playground + the state gallery (/gallery.html)
+tools                      screenshot.mjs (Chrome DevTools Protocol, no extra dependency)
 ```
+
+The playground and its gallery run against the sources, so the dev server hot-reloads the
+library itself. The gallery at `/gallery.html?theme=light` renders every state the widget
+can be in — idle, playing, paused, ended, loading, empty, and both failures — each marked
+with `data-sn-case`/`data-sn-state`/`data-sn-layout` for the browser checks.
 
 ## License
 

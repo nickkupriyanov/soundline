@@ -550,19 +550,38 @@ Iteration 6, `FALLBACK_THEME`), иначе системная светлая т�
 
 ---
 
-### Iteration 14 — Storybook, playground, галерея
+### Iteration 14 — Storybook, playground, галерея · ✅ готово
 
 **Цель:** витрина и ручная проверка состояний.
 
 Задачи:
 
-- [ ] `.storybook/` + истории: состояния плеера (idle/loading/playing/paused/ended/error/empty),
+- [x] `.storybook/` + истории: состояния плеера (idle/loading/playing/paused/ended/error/empty),
       темы, локали `en/ru`, компоновка, кастомные части, headless.
-- [ ] `apps/playground/` (Vite): контролы темы/локали/компоновки, mock-адаптер и mock-движок.
-- [ ] `gallery.html`: галерея состояний с явными `data-*` для браузерных проверок.
-- [ ] `tools/screenshot.mjs` для снимков README (`docs/images/`).
+- [x] `apps/playground/` (Vite): контролы темы/локали/компоновки, mock-адаптер и mock-движок.
+- [x] `gallery.html`: галерея состояний с явными `data-*` для браузерных проверок.
+- [x] `tools/screenshot.mjs` для снимков README (`docs/images/`).
 
 **Готово, когда:** `pnpm dev`, `pnpm storybook` и галерея открываются и покрывают все состояния.
+→ выполнено (`pnpm build-storybook` и `pnpm --filter soundline-playground build` зелёные,
+снимки сняты через `tools/screenshot.mjs`).
+
+Уточнения против списка (отмечено в отчёте): состояния выставлены не «декорацией», а через
+публичные `actions` мок-движка — общий `PlaybackDriver` в демо-данных доводит плеер до
+`playing`/`paused`/`ended`. «Ended» — это последний трек, доведённый до конца: с
+`loop: off` завершение любого другого трека просто переходит к следующему, поэтому до конца
+плейлиста доигрывает последний. «Source refused» требует трека без `src`: контроллер
+предпочитает `track.src` и не спрашивает адаптер, если источник уже есть (`resolveSourceFor`),
+поэтому демо-плейлист для этого кейса оставляет `src` первого трека адаптеру. Storybook
+собирается против исходников (`viteFinal` алиасит core на `src`, как в vitest) — `pnpm
+storybook` работает без предварительного `pnpm build`.
+
+Минимально необходимое сверх списка (отмечено в отчёте): Storybook `^10.6.1` (docs + a11y,
+`react-vite`) в devDeps `soundline-react`; `.storybook/preview.css` с подложкой под тему;
+демо-фикстуры и драйвер (`stories/demo.tsx`, `apps/playground/src/demo.tsx`); README-раздел
+«Development» дополнен командами `storybook`/`preview`/`screenshot` и структурой `apps`/`tools`;
+коммитируемые снимки `docs/images/player-{dark,light}.png` для README. Changeset не нужен:
+меняются только devDeps, тулинг и private playground, публикуемые пакеты не затрагиваются.
 
 ---
 
