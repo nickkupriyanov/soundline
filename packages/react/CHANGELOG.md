@@ -1,5 +1,13 @@
 # @nickkupriyanov/soundline-react
 
+## 0.2.1
+
+### Patch Changes
+
+- 2812c14: Centre the volume slider under Play between equal mute and percentage slots. Showing the percentage no longer changes the visual balance.
+- Updated dependencies [2812c14]
+  - @nickkupriyanov/soundline-core@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
