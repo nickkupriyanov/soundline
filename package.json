@@ -20,7 +20,6 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "pnpm build && changeset publish",
-    "release:publish": "node tools/publish.mjs",
     "screenshot": "node tools/screenshot.mjs",
     "check:layout": "node tools/check-layout.mjs",
     "check:container": "node tools/check-container.mjs",

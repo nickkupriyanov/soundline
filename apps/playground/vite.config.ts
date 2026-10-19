@@ -5,6 +5,11 @@ import { defineConfig } from 'vite';
 const source = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
+  /**
+   * GitHub Pages serves the playground from `/soundline/`, so the deploy job
+   * exports `PAGES_BASE=/soundline/`. Local dev and the browser checks keep `/`.
+   */
+  base: process.env.PAGES_BASE ?? '/',
   plugins: [react()],
   resolve: {
     alias: [

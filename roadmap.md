@@ -662,8 +662,9 @@ storybook` работает без предварительного `pnpm build`
 Отмечено в отчёте: четвёртая уборка сверх списка — объявленный, переведённый, но никогда не
 рендерившийся ключ `unsupportedLabel` теперь действительно показывается (`errorMessage`
 выбирает `queueError` для списка, `unsupportedLabel` для `NOT_SUPPORTED`, иначе
-`genericError`); публикующая половина workflow требует секрета `NPM_TOKEN` (без него version
-PR формируется, а публикация сообщает об отсутствии токена вместо падения); `verify:install`
+`genericError`); публикующая половина workflow требует секрета `NPM_TOKEN` (схема релиза
+переработана при подготовке к публикации — см. раздел «Публикация: GitHub, Pages, npm»);
+`verify:install`
 теперь проверяет, что tarball действительно везёт `README.md` и `LICENSE` из своего `files`;
 исправлены утверждения, что контрастность проверяется браузерным прогоном (её не проверяет
 ничто — перенесено в известные ограничения спеки и README); тест возврата фокуса в
@@ -679,10 +680,9 @@ PR формируется, а публикация сообщает об отс�
 - [x] **P1 · публикация.** `release.yml` передавал в `publish` shell-условие `if`, а
       `changesets/action` запускает вход как исполняемую команду: `@actions/exec` делит
       строку на argv и спавнит первое слово, поэтому `if` искали в `PATH` и публикация
-      падала. Проверка токена вынесена в `tools/publish.mjs` (npm-скрипт
-      `release:publish`), а тот же секрет теперь приходит и в `NODE_AUTH_TOKEN` — именно
-      эту переменную `setup-node` пишет в `.npmrc`, и без неё `changeset publish` не
-      авторизуется, даже когда `NPM_TOKEN` задан.
+      падала. При подготовке к публикации (раздел «Публикация: GitHub, Pages, npm») схема
+      заменена на проверенную в Slotline: `changesets/action@v2`, отдельный шаг проверки
+      `NODE_AUTH_TOKEN` с понятной диагностикой, provenance, git-теги и GitHub releases.
 - [x] **P1 · замена движка.** `updateEngine()` отписывался от старого движка, но не
       останавливал его: оба оставались `playing`, а `stop()` доставал только новый.
       Замена теперь отцепляет старый движок, ставит его на паузу и отменяет разрешение
@@ -823,6 +823,31 @@ PR формируется, а публикация сообщает об отс�
       ошибки и фокуса в Chrome; changeset обоих пакетов
       дополнен, снимки README (`docs/images/player-{dark,light}.png`) пересняты из
       Storybook на итоговом CSS.
+
+---
+
+### Публикация: GitHub, Pages, npm · ✅ подготовлено
+
+**Цель:** репозиторий на GitHub, демо и Storybook на Pages, пакеты в npm — по схеме Slotline.
+
+Задачи:
+
+- [x] `.github/workflows/pages.yml`: playground в корне проектной страницы, Storybook в
+      `/storybook/`, `.nojekyll`, деплой через `upload-pages-artifact`/`deploy-pages`.
+- [x] `apps/playground/vite.config.ts`: `base` из `PAGES_BASE` — Pages отдаёт проект из
+      `/soundline/`, локально остаётся `/`.
+- [x] `.github/workflows/release.yml` по схеме Slotline: `changesets/action@v2`, отдельный шаг
+      проверки `NODE_AUTH_TOKEN` с читаемой диагностикой, `NPM_CONFIG_PROVENANCE`, git-теги и
+      GitHub releases. `tools/publish.mjs` и скрипт `release:publish` удалены.
+- [x] README: бейджи npm / demo / Storybook, ссылки под заголовком, раздел про релиз и Pages.
+
+Остаётся снаружи репозитория (нужны права владельца и токен npm):
+
+- [ ] создать `github.com/nickkupriyanov/soundline` и запушить `main`;
+- [ ] добавить секрет `NPM_TOKEN` (granular, read-and-write, 2FA bypass);
+- [ ] включить Pages: Settings → Pages → Source: GitHub Actions;
+- [ ] смёржить version PR (0.1.0 → 0.2.0) — он публикует оба пакета, ставит теги
+      и открывает GitHub releases.
 
 ---
 

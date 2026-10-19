@@ -1,6 +1,9 @@
 # Soundline
 
 [![CI](https://github.com/nickkupriyanov/soundline/actions/workflows/ci.yml/badge.svg)](https://github.com/nickkupriyanov/soundline/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@nickkupriyanov/soundline-react?label=npm)](https://www.npmjs.com/package/@nickkupriyanov/soundline-react)
+[![Live demo](https://img.shields.io/badge/demo-live-ff215a)](https://nickkupriyanov.github.io/soundline/)
+[![Storybook](https://img.shields.io/badge/storybook-open-ff4785)](https://nickkupriyanov.github.io/soundline/storybook/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 A modern, accessible audio player for React — **single track and playlist** — in one
@@ -17,6 +20,8 @@ drop-in component.
   keyboard control, every queue row is reachable and removable by keyboard, track changes
   and play/pause are announced through a live region, and reduced motion is honoured.
 - 📦 **Tiny**, with no third-party runtime dependencies.
+
+**[Live demo](https://nickkupriyanov.github.io/soundline/)** · **[Storybook](https://nickkupriyanov.github.io/soundline/storybook/)**
 
 ![The Soundline player in the dark theme](docs/images/player-dark.png)
 
@@ -470,12 +475,17 @@ libraries once, then one independent job per leg.
 
 Releases go through changesets: `pnpm changeset` records a change, and
 `.github/workflows/release.yml` turns the recorded changes into a version PR (new versions
-and changelogs) that publishes on merge. Publishing needs an `NPM_TOKEN` repository secret:
-the workflow passes it as both `NPM_TOKEN` and `NODE_AUTH_TOKEN` — the latter is the variable
-`setup-node` writes into `.npmrc`, and it is what npm actually authenticates with. The guard
-in `tools/publish.mjs` (`pnpm release:publish`) skips the publish and says so when the secret
-is missing, so the version PR still forms. The full contract is in
-[`docs/specification.md`](docs/specification.md).
+and changelogs) that publishes on merge. Publishing needs an `NPM_TOKEN` repository secret —
+a granular npm token with read-and-write package access and 2FA bypass. The workflow passes
+it as `NODE_AUTH_TOKEN`, the variable `setup-node` writes into `.npmrc` and the only one npm
+authenticates with, checks it before publishing and fails with a readable diagnosis when it
+is missing or invalid. A release publishes both packages with provenance, pushes the git tags
+and opens the GitHub releases.
+
+The public site — the playground at the root and the Storybook under `/storybook/` — is
+deployed to GitHub Pages by `.github/workflows/pages.yml` on every push to `main`. The
+playground build reads its base path from `PAGES_BASE`, so the same build works locally and
+under `/soundline/`. The full contract is in [`docs/specification.md`](docs/specification.md).
 
 ## Scope and known limits
 
@@ -504,8 +514,6 @@ Honest limits of the current version:
   heading ("Playback error").
 - `clearQueue`, a playlist switch and a queue swapped by the application are instant: only
   a removal asked for through the list has an exit.
-- The npm badges are absent because the packages are not published yet; the CI and licence
-  badges above describe this repository.
 
 ## License
 
