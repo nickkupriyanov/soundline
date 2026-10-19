@@ -130,7 +130,7 @@ describe('component layer', () => {
   it('reveals the volume readout only while the row is in use', () => {
     // It is a hint, not a permanent column: hidden at rest, shown while the
     // slider is dragged or the row has the focus, and out of the flow so it
-    // never widens the row or pushes the visible pair off centre.
+    // never widens the row or pushes the slider off centre.
     expect(soundlineCss).toMatch(/\.sn-volume-value\s*\{[\s\S]*?position:\s*absolute;/);
     expect(soundlineCss).toMatch(/\.sn-volume-value\s*\{[\s\S]*?opacity:\s*0;/);
     expect(soundlineCss).not.toMatch(/\.sn-volume-value\s*\{[^}]*width:\s*36px/);
@@ -138,11 +138,13 @@ describe('component layer', () => {
     expect(soundlineCss).toMatch(/\.sn-volume-slider\[data-sn-dragging='true'\] \.sn-volume-value/);
   });
 
-  it('centres the mute button and the slider, not a hidden column', () => {
+  it('centres the slider between equal side slots', () => {
     expect(soundlineCss).toMatch(
       /\.sn-volume\s*\{[\s\S]*?display:\s*flex;[\s\S]*?justify-content:\s*center;/,
     );
-    expect(soundlineCss).toMatch(/\.sn-volume-button\s*\{[\s\S]*?flex:\s*0 0 32px;/);
+    expect(soundlineCss).toMatch(/\.sn-volume::after\s*\{[^}]*flex:\s*0 0 34px;/);
+    expect(soundlineCss).toMatch(/\.sn-volume-value\s*\{[^}]*width:\s*34px;/);
+    expect(soundlineCss).toMatch(/\.sn-volume-button\s*\{[\s\S]*?flex:\s*0 0 34px;/);
     expect(soundlineCss).toMatch(/\.sn-volume-slider\s*\{[\s\S]*?flex:\s*0 1 124px;/);
   });
 

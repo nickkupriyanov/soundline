@@ -27,8 +27,8 @@ function thumbLeft(percent: number): string {
  * is not a level of zero.
  *
  * It lives inside the slider and is positioned outside the flow as a hint beside
- * it, so the visible pair — mute button and bar — stays centred whether the
- * number is shown or not.
+ * it, in a slot matching the mute button. The bar stays centred under Play
+ * whether the number is shown or not.
  *
  * The track is inset by {@link VOLUME_TRACK_INSET} on both sides so the 14px
  * thumb fits at 0% and 100%. The fill, the thumb and the pointer maths all use

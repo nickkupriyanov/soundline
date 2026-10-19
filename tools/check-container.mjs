@@ -106,9 +106,8 @@ const PROBE = `
     controlsToQueue: gap(controls, queue),
   };
 
-  // The volume row: the mute button and the slider are the only things in the
-  // flow and are centred in the card; the percentage is an absolute hint beside
-  // them and must not widen the row or leave the card.
+  // The slider is centred under Play between equal mute/readout slots.
+  // Revealing the percentage must not move it or leave the card.
   const volume = root.querySelector('.sn-volume');
   const volumeButton = root.querySelector('.sn-volume-button');
   const volumeSlider = root.querySelector('.sn-volume-slider');
@@ -122,7 +121,8 @@ const PROBE = `
     button: round(box(volumeButton).width),
     slider: round(box(volumeSlider).width),
     gap: round(box(volumeSlider).left - box(volumeButton).right),
-    pairCentre: round((box(volumeButton).left + box(volumeSlider).right) / 2),
+    sliderCentre: round(box(volumeSlider).left + box(volumeSlider).width / 2),
+    playCentre: round(box(root.querySelector('.sn-play-button')).left + box(root.querySelector('.sn-play-button')).width / 2),
     cardCentre: round(box(card).left + box(card).width / 2),
     contentRight: round(box(card).right - cardPaddingRight),
   };
@@ -148,7 +148,7 @@ const PROBE = `
     opacity: getComputedStyle(volumeValue).opacity,
     width: round(box(volumeValue).width),
     right: round(box(volumeValue).right),
-    pairCentre: round((box(volumeButton).left + box(volumeSlider).right) / 2),
+    sliderCentre: round(box(volumeSlider).left + box(volumeSlider).width / 2),
     clipped: volumeValue.scrollWidth > volumeValue.clientWidth,
   });
   const readoutRest = await readout();
@@ -159,7 +159,7 @@ const PROBE = `
   await sleep(220);
 
   // The narrowest card the specification names: the hint has to fit beside the
-  // centred pair without leaving the 280px card.
+  // centred slider without leaving the 280px card.
   figure.style.width = '280px';
   await sleep(150);
   volumeSlider.focus();
@@ -168,7 +168,7 @@ const PROBE = `
     opacity: getComputedStyle(volumeValue).opacity,
     readoutRight: round(box(volumeValue).right),
     contentRight: round(box(card).right - parseFloat(getComputedStyle(card).paddingRight)),
-    pairCentre: round((box(volumeButton).left + box(volumeSlider).right) / 2),
+    sliderCentre: round(box(volumeSlider).left + box(volumeSlider).width / 2),
     cardCentre: round(box(card).left + box(card).width / 2),
   };
   volumeSlider.blur();
@@ -478,19 +478,23 @@ for (const [name, expected] of Object.entries(expectedGaps)) {
 const volume = report.volume.layout;
 if (volume.width > 208.5)
   failures.push(`the volume row is ${volume.width}px wide, expected ≤208px`);
-if (volume.button !== 32 || volume.slider !== 124) {
+if (volume.button !== 34 || volume.slider !== 124) {
   failures.push(
-    `the volume pair is ${volume.button}px button and ${volume.slider}px slider, expected 32px/124px`,
+    `the volume pair is ${volume.button}px button and ${volume.slider}px slider, expected 34px/124px`,
   );
 }
 if (Math.abs(volume.gap - 8) > 0.5) {
   failures.push(`the volume gap is ${volume.gap}px, expected 8px`);
 }
-if (Math.abs(volume.pairCentre - volume.cardCentre) > 0.5) {
+if (Math.abs(volume.sliderCentre - volume.cardCentre) > 0.5) {
   failures.push(
-    `the mute button and slider are centred at ${volume.pairCentre}px, the card at ${volume.cardCentre}px`,
+    `the volume slider is centred at ${volume.sliderCentre}px, the card at ${volume.cardCentre}px`,
   );
 }
+if (Math.abs(volume.sliderCentre - volume.playCentre) > 0.5)
+  failures.push(
+    `volume slider centre ${volume.sliderCentre}px differs from Play ${volume.playCentre}px`,
+  );
 if (volume.slider <= 0) failures.push('the volume slider has no width');
 
 const zero = report.volume.ends.zero;
@@ -517,9 +521,9 @@ if (readout.rest.opacity !== '0') {
 if (readout.focused.opacity !== '1') {
   failures.push(`the volume readout is ${readout.focused.opacity} focused, expected shown`);
 }
-if (Math.abs(readout.rest.pairCentre - readout.focused.pairCentre) > 0.5) {
+if (Math.abs(readout.rest.sliderCentre - readout.focused.sliderCentre) > 0.5) {
   failures.push(
-    `revealing the volume readout moved the pair from ${readout.rest.pairCentre}px to ${readout.focused.pairCentre}px`,
+    `revealing the volume readout moved the slider from ${readout.rest.sliderCentre}px to ${readout.focused.sliderCentre}px`,
   );
 }
 if (readout.focused.right > volume.contentRight + 0.5) {
@@ -540,9 +544,9 @@ if (narrowVolume.readoutRight > narrowVolume.contentRight + 0.5) {
     `at 280px the volume readout ends at ${narrowVolume.readoutRight}px, past the card content ${narrowVolume.contentRight}px`,
   );
 }
-if (Math.abs(narrowVolume.pairCentre - narrowVolume.cardCentre) > 0.5) {
+if (Math.abs(narrowVolume.sliderCentre - narrowVolume.cardCentre) > 0.5) {
   failures.push(
-    `at 280px the pair is centred at ${narrowVolume.pairCentre}px, the card at ${narrowVolume.cardCentre}px`,
+    `at 280px the slider is centred at ${narrowVolume.sliderCentre}px, the card at ${narrowVolume.cardCentre}px`,
   );
 }
 
@@ -711,7 +715,7 @@ console.log(
     .join('  ·  ')}`,
 );
 console.log(
-  `volume:   ${volume.width}px · pair ${volume.button}+${volume.gap}+${volume.slider}px centred ${volume.pairCentre}/${volume.cardCentre}px · thumb ${zero.centre}…${full.centre}px · readout ${readout.rest.opacity}→${readout.focused.opacity} to ${readout.focused.right}/${volume.contentRight}px (280px: ${narrowVolume.readoutRight}/${narrowVolume.contentRight}px)`,
+  `volume:   ${volume.width}px · slots ${volume.button}+${volume.gap}+${volume.slider}px centred ${volume.sliderCentre}/${volume.cardCentre}px · thumb ${zero.centre}…${full.centre}px · readout ${readout.rest.opacity}→${readout.focused.opacity} to ${readout.focused.right}/${volume.contentRight}px (280px: ${narrowVolume.readoutRight}/${narrowVolume.contentRight}px)`,
 );
 console.log(
   `columns:  title ${alignment.title}px · artist ${alignment.artist}px · heading ${alignment.heading}px · durations ${alignment.durationRight}px · count ${alignment.countRight}px`,

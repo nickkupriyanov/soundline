@@ -400,11 +400,9 @@
 /* Volume ------------------------------------------------------------------- */
 
 /*
- * The compact centred row: the mute button and the slider are the only things in
- * the flow, and they are centred in the card, capped at `--sn-volume-width`.
- * The percentage is not a third column: it is an absolute hint beside the
- * slider (see `.sn-volume-value`), so the visible pair is centred at rest and
- * never moves when the number appears.
+ * Centre the slider under Play with equal 34px slots on either side.
+ * The trailing spacer reserves the percentage slot even when the hint is hidden,
+ * so showing the number never moves the slider.
  */
 .sn-volume {
   display: flex;
@@ -417,11 +415,16 @@
   margin-inline: auto;
 }
 
+.sn-volume::after {
+  content: '';
+  flex: 0 0 34px;
+}
+
 .sn-volume-button {
   display: grid;
   place-items: center;
-  flex: 0 0 32px;
-  width: 32px;
+  flex: 0 0 34px;
+  width: 34px;
   height: 32px;
   padding: 0;
   color: var(--sn-text-muted);
@@ -514,14 +517,16 @@
  * The percentage is feedback, not a second control: no tab stop, and hidden
  * from the assistive tree because the slider already speaks the same value in
  * `aria-valuetext`. It is also outside the flow: absolutely positioned beside
- * the slider, so it adds no column, and the centred pair of mute and bar never
- * moves when the number appears. The hint is hidden until the row has the
+ * the slider in the reserved trailing slot, so the bar stays centred under Play
+ * when the number appears. The hint is hidden until the row has the
  * keyboard focus or the slider is dragged.
  */
 .sn-volume-value {
   position: absolute;
   top: 50%;
-  left: calc(100% + 6px);
+  left: calc(100% + 8px);
+  width: 34px;
+  text-align: center;
   transform: translateY(-50%);
   font-size: 12px;
   font-variant-numeric: tabular-nums;

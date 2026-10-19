@@ -239,8 +239,9 @@ the same set under `[data-sn-theme='light']`, which the widget sets from the res
 
 `--sn-artwork-size` is 72px by default, 88px in a full card whose container is at least
 340px wide, and 64px in the compact layout. `--sn-volume-width` caps the centred volume
-row at 208px: the visible pair is a 32px mute button, an 8px gap and a 124px slider;
-the percentage is an absolutely positioned hint outside the flow.
+row at 208px: the 124px slider is centred under Play, between equal 34px slots
+for the mute button and percentage, with 8px gaps. The percentage is an absolutely
+positioned hint; showing it does not move the slider.
 `--sn-track` paints the empty part of the seek and volume bars and is separate from
 `--sn-control`, which is the card's own surface in the light theme. `--sn-queue-fade` is
 both the queue's bottom fade and its bottom padding, so the last row clears the fade at
