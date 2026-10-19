@@ -28,7 +28,7 @@ function reachVolume(): Promise<HTMLElement> {
   return screen.findByRole('slider', { name: 'Volume' });
 }
 
-/** A 100-pixel-wide bar at x=0, so `clientX` reads directly as a percentage. */
+/** A 100-pixel-wide box at x=0, so `clientX` reads through the track span. */
 function rect(width: number): DOMRect {
   return {
     left: 0,
@@ -41,6 +41,17 @@ function rect(width: number): DOMRect {
     y: 0,
     toJSON: () => ({}),
   } as DOMRect;
+}
+
+/** The visual track is inset 7px on each side of the 100px box. */
+const INSET = 7;
+/** Where the pointer has to be to land on a given percentage of the track. */
+const point = (percent: number, width = 100): number =>
+  INSET + (percent / 100) * (width - INSET * 2);
+
+/** The visible percentage, which is feedback rather than a tab stop. */
+function volumeValue(): HTMLElement {
+  return document.querySelector('.sn-volume-value') as HTMLElement;
 }
 
 describe('the volume control', () => {
@@ -110,14 +121,14 @@ describe('the volume control', () => {
     const slider = await reachVolume();
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect(100));
 
-    fireEvent.pointerDown(slider, { pointerId: 1, clientX: 40 });
+    fireEvent.pointerDown(slider, { pointerId: 1, clientX: point(40) });
     expect(slider).toHaveAttribute('data-sn-dragging', 'true');
     expect(slider).toHaveAttribute('aria-valuenow', '40');
 
-    fireEvent.pointerMove(slider, { pointerId: 1, clientX: 70 });
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: point(70) });
     expect(slider).toHaveAttribute('aria-valuenow', '70');
 
-    fireEvent.pointerUp(slider, { pointerId: 1, clientX: 70 });
+    fireEvent.pointerUp(slider, { pointerId: 1, clientX: point(70) });
     expect(slider).not.toHaveAttribute('data-sn-dragging');
     expect(slider).toHaveAttribute('aria-valuenow', '70');
     expect(slider).toHaveAttribute('aria-valuetext', '70%');
@@ -132,11 +143,87 @@ describe('the volume control', () => {
     await user.click(screen.getByRole('button', { name: 'Mute' }));
     expect(screen.getByRole('button', { name: 'Unmute' })).toBeInTheDocument();
 
-    fireEvent.pointerDown(slider, { pointerId: 1, clientX: 40 });
-    fireEvent.pointerUp(slider, { pointerId: 1, clientX: 40 });
+    fireEvent.pointerDown(slider, { pointerId: 1, clientX: point(40) });
+    fireEvent.pointerUp(slider, { pointerId: 1, clientX: point(40) });
 
     expect(screen.getByRole('button', { name: 'Mute' })).toHaveAttribute('aria-pressed', 'false');
     expect(slider).toHaveAttribute('aria-valuenow', '40');
+  });
+
+  it('shows the level, including the remembered one while muted', async () => {
+    const user = userEvent.setup();
+    renderPlayer();
+    const slider = await reachVolume();
+
+    expect(volumeValue()).toHaveTextContent('100%');
+    expect(volumeValue()).toHaveAttribute('aria-hidden', 'true');
+    // The readout is feedback: it must not become another Tab stop.
+    expect(volumeValue().tagName).toBe('SPAN');
+    expect(volumeValue()).not.toHaveAttribute('tabindex');
+
+    fireEvent.keyDown(slider, { key: 'ArrowLeft' });
+    expect(volumeValue()).toHaveTextContent('95%');
+
+    await user.click(screen.getByRole('button', { name: 'Mute' }));
+    // Muting does not zero the level, and the readout keeps saying so.
+    expect(volumeValue()).toHaveTextContent('95%');
+    expect(slider).toHaveAttribute('aria-valuenow', '95');
+  });
+
+  it('maps every point of the inset track, including both ends', async () => {
+    renderPlayer();
+    const slider = await reachVolume();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect(100));
+    const thumb = document.querySelector('.sn-volume-thumb') as HTMLElement;
+
+    // The visible track runs from 7px to 93px. The ends of the track are the
+    // ends of the range, not a jump to 0 or 100 somewhere inside it.
+    fireEvent.pointerDown(slider, { pointerId: 1, clientX: point(0) });
+    expect(slider).toHaveAttribute('aria-valuenow', '0');
+    expect(volumeValue()).toHaveTextContent('0%');
+
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: point(1) });
+    expect(slider).toHaveAttribute('aria-valuenow', '1');
+    expect(volumeValue()).toHaveTextContent('1%');
+
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: point(50) });
+    expect(slider).toHaveAttribute('aria-valuenow', '50');
+    expect(volumeValue()).toHaveTextContent('50%');
+
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: point(99) });
+    expect(slider).toHaveAttribute('aria-valuenow', '99');
+    expect(volumeValue()).toHaveTextContent('99%');
+
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: point(100) });
+    expect(slider).toHaveAttribute('aria-valuenow', '100');
+    fireEvent.pointerUp(slider, { pointerId: 1, clientX: point(100) });
+    expect(volumeValue()).toHaveTextContent('100%');
+
+    // The thumb's centre is at 7px at 0% and at width−7px at 100%; the CSS
+    // correction is what keeps it inside the track instead of hanging over it.
+    fireEvent.keyDown(slider, { key: 'Home' });
+    expect(thumb.style.left).toBe('calc(0% + 7.000px)');
+    fireEvent.keyDown(slider, { key: 'End' });
+    expect(thumb.style.left).toBe('calc(100% - 7.000px)');
+  });
+
+  it('follows the dragged value in the readout before committing it', async () => {
+    renderPlayer();
+    const slider = await reachVolume();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect(100));
+
+    fireEvent.pointerDown(slider, { pointerId: 1, clientX: point(25) });
+    expect(volumeValue()).toHaveTextContent('25%');
+    expect(slider).toHaveAttribute('aria-valuenow', '25');
+
+    fireEvent.pointerMove(slider, { pointerId: 1, clientX: point(75) });
+    expect(volumeValue()).toHaveTextContent('75%');
+    expect(slider).toHaveAttribute('aria-valuenow', '75');
+
+    // The readout never jumps: it is the same dragged value the slider speaks.
+    fireEvent.pointerUp(slider, { pointerId: 1, clientX: point(75) });
+    expect(volumeValue()).toHaveTextContent('75%');
+    expect(slider).toHaveAttribute('aria-valuenow', '75');
   });
 
   it('speaks the copy of the active locale', async () => {

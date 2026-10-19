@@ -19,6 +19,7 @@ import type {
   EngineStatus,
   LoopMode,
   SoundlineLayout,
+  SoundlineMessages,
   SoundlineTheme,
   Track,
 } from './types';
@@ -146,9 +147,17 @@ export interface PlayerView {
   /**
    * A failure that leaves nothing to play: the current source would not load, or
    * the track list itself could not be fetched. `actions.canRetry` says whether
-   * anything can be done about it.
+   * anything can be done about it, `error.code`/`error.phase` say what failed, and
+   * `errorMessage` already carries the copy that goes with it.
    */
   error: PlayerError | null;
+  /**
+   * The failure in words, ready to render and announce: the playlist wording for
+   * a list that could not be fetched, the unsupported-format one when the browser
+   * refused the source, the generic one otherwise. Empty when nothing failed — the
+   * same shape as `live.message`.
+   */
+  errorMessage: string;
   nowPlaying: NowPlayingView | null;
   progress: ProgressView;
   transport: TransportView;
@@ -182,6 +191,22 @@ function loopLabelOf(mode: LoopMode, config: PlayerConfig): string {
   if (mode === 'one') return config.messages.repeatOneLabel;
   if (mode === 'all') return config.messages.repeatAllLabel;
   return config.messages.repeatOffLabel;
+}
+
+/**
+ * The copy a failure is rendered and announced with.
+ *
+ * Every string a dictionary declares is a string something renders, so the choice
+ * is by what actually failed: an unreachable list is the list's wording, the
+ * browser refusing the format is the unsupported-format one, and anything else —
+ * a source that would not load, a decode that blew up — is the generic one. Empty
+ * when nothing failed, the same shape as `live.message`.
+ */
+function failureMessageOf(error: PlayerError | null, messages: SoundlineMessages): string {
+  if (error === null) return '';
+  if (error.phase === 'tracks') return messages.queueError;
+  if (error.code === 'NOT_SUPPORTED') return messages.unsupportedLabel;
+  return messages.genericError;
 }
 
 /**
@@ -323,12 +348,14 @@ export function derivePlayerView(
   // for.
   const loading = state.queueStatus === 'loading' || state.queueStatus === 'idle';
   const empty = state.queueStatus === 'ready' && count === 0;
-  // `view.error` below folds the two failures together; the announcement does the
-  // same, so an unreachable list says what happened instead of announcing
-  // "loading" for as long as the widget lives.
   const failed = state.error ?? state.queueError;
+  // The two failures are folded into one field, and so is the wording: a list
+  // that could not be fetched is not a track that would not play, so it gets its
+  // own copy. An unreachable list therefore says what happened instead of
+  // announcing "loading" for as long as the widget lives.
+  const failureMessage = failureMessageOf(failed, messages);
   const liveMessage = failed
-    ? messages.genericError
+    ? failureMessage
     : telemetry.status === 'ended' && !playing
       ? messages.endedLabel
       : state.queueStatus !== 'ready'
@@ -350,6 +377,7 @@ export function derivePlayerView(
     // play. Swallowing the list failure here is what used to leave the widget
     // showing an empty card while the live region kept saying "Loading tracks…".
     error: state.error ?? state.queueError,
+    errorMessage: failureMessage,
     nowPlaying,
     progress,
     transport,

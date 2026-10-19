@@ -207,7 +207,15 @@ export interface PlayerController {
    * loop. A different playlist is expressed by changing the context key.
    */
   updateAdapter(adapter: TrackSourceAdapter): void;
-  /** Replaces the playback backend and reloads the current source into it. */
+  /**
+   * Replaces the playback backend and reloads the current source into it.
+   *
+   * The handover is exclusive: the previous engine is stopped, so it cannot keep
+   * playing underneath the new one, and a source that was still resolving for it
+   * is cancelled and resolved again for the replacement. The first engine stays
+   * untouched until the controller is started, because until then it never drove
+   * it.
+   */
   updateEngine(engine: PlaybackEngine): void;
   readonly actions: PlayerControllerActions;
   start(): void;
@@ -760,7 +768,13 @@ export function createPlayerController(options: PlayerControllerOptions): Player
           engineState.status === 'paused' ||
           engineState.status === 'ended');
       if (canStart) startPlayback();
-    } else if (engineState.status === 'playing') {
+    } else if (engineState.status === 'playing' || engineState.status === 'loading') {
+      /*
+       * `loading` is also the status of a stall: the element is still playing in
+       * intent, so a pause has to reach it. The engine decides whether there is
+       * anything to pause — a source that is merely being fetched is already
+       * paused and keeps its `loading` status.
+       */
       engine.pause();
     }
   }
@@ -1200,7 +1214,17 @@ export function createPlayerController(options: PlayerControllerOptions): Player
 
     updateEngine(next) {
       if (next === engine) return;
+      const previous = engine;
+      // Detach before pausing: the old backend is not the player's any more, so
+      // its pause must not be mirrored as a state change. Pausing is what makes
+      // the swap safe — otherwise the replaced engine keeps playing underneath
+      // the new one.
       detachEngine();
+      if (started) previous.pause();
+      // A source being resolved for the old backend must not land in the new one
+      // behind the reload's back.
+      sourceAbort?.abort();
+      sourceAbort = null;
       engine = next;
       engineState = engine.getState();
       engineRevision += 1;
@@ -1232,6 +1256,12 @@ export function createPlayerController(options: PlayerControllerOptions): Player
       tracksAbort = null;
       sourceAbort?.abort();
       sourceAbort = null;
+      // A load that was still resolving never reached the engine. Its token was
+      // already claimed, so leaving it would make the next `start()` believe the
+      // source is in the engine and skip the load — the player would sit on
+      // `playing: true` over an idle backend. A source that did land stays put:
+      // a restart resumes it instead of reloading and losing the playhead.
+      if (loadedSrc === null) loadedToken = -1;
       // Detach before pausing: a paused engine is not the player's business any
       // more, and leaving it running would keep audio alive after an unmount.
       detachEngine();

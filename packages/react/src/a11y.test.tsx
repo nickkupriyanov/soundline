@@ -16,9 +16,10 @@
  *    in roles, names or relationships fails here instead of in production.
  *
  * What no test here can say anything about is contrast (`jsdom` applies no
- * stylesheet) and what a screen reader actually speaks — the first is a browser
- * pass over the built CSS, the second is why the announcement rules are asserted
- * on the region's text rather than trusted to axe.
+ * stylesheet, so axe's colour rules are off as well) and what a screen reader
+ * actually speaks. The palette is a documented known limit rather than a checked
+ * guarantee; the announcement rules are asserted on the region's text rather than
+ * trusted to axe.
  */
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -283,7 +284,7 @@ describe('the live region', () => {
     await waitFor(() => expect(renderedState()).toBe('error'));
 
     // Not "loading tracks…" forever with an empty list: the failure is the state.
-    expect(live()).toHaveTextContent('The track could not be loaded');
+    expect(live()).toHaveTextContent('The playlist could not be loaded');
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 });

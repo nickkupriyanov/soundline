@@ -28,6 +28,10 @@ describe('SN_CLASS', () => {
     expect(SN_CLASS.root).toBe('sn-root');
     expect(SN_CLASS.playButton).toBe('sn-play-button');
     expect(SN_CLASS.trackItemActive).toBe('sn-track-item-active');
+    expect(SN_CLASS.progress).toBe('sn-progress');
+    expect(SN_CLASS.controls).toBe('sn-controls');
+    expect(SN_CLASS.volumeValue).toBe('sn-volume-value');
+    expect(SN_CLASS.trackDuration).toBe('sn-track-duration');
   });
 });
 

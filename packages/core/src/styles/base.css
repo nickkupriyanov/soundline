@@ -22,7 +22,14 @@
 
 /* Controls ----------------------------------------------------------------- */
 
-.sn-root button {
+/*
+ * Zero-specificity on purpose. A plain `.sn-root button` rule outranks a class
+ * rule such as `.sn-play-button` (0,1,1 against 0,1,0), so its `color: inherit`
+ * silently won over the component layer's tokens. `:where()` keeps the reset at
+ * the bottom of the cascade, where a reset belongs, and every component class
+ * can paint its own colour.
+ */
+:where(.sn-root) :where(button) {
   font: inherit;
   color: inherit;
 }

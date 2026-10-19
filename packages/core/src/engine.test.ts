@@ -165,3 +165,113 @@ function describeEngineContract(name: string, create: () => PlaybackEngine): voi
 }
 
 describeEngineContract('createMockEngine', () => createMockEngine({ duration: 60 }));
+
+/* -------------------------------------------------------------------------- */
+/*  The media engine, driven by a fake element                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Just enough of an `<audio>` element for the engine: the media events it listens
+ * to, the properties it mirrors and a `pause()` that records being asked.
+ */
+class FakeAudio extends EventTarget {
+  src = '';
+  currentTime = 0;
+  duration = 100;
+  volume = 1;
+  muted = false;
+  playbackRate = 1;
+  preload = 'metadata';
+  paused = true;
+  error: MediaError | null = null;
+  buffered = { length: 0, start: () => 0, end: () => 0 };
+  loadCalls = 0;
+  pauseCalls = 0;
+  /** Whether `load()` should report metadata at once, as a cached source would. */
+  autoMetadata = true;
+
+  load(): void {
+    this.loadCalls += 1;
+    if (!this.autoMetadata) return;
+    this.duration = 100;
+    this.dispatchEvent(new Event('loadedmetadata'));
+  }
+
+  play(): Promise<void> {
+    this.paused = false;
+    this.dispatchEvent(new Event('play'));
+    return Promise.resolve();
+  }
+
+  pause(): void {
+    this.pauseCalls += 1;
+    this.paused = true;
+    this.dispatchEvent(new Event('pause'));
+  }
+}
+
+function mediaEngine() {
+  const audio = new FakeAudio();
+  const engine = createMediaEngine({
+    createElement: () => audio as unknown as HTMLAudioElement,
+  });
+  return { audio, engine };
+}
+
+async function playLoaded(engine: PlaybackEngine): Promise<void> {
+  engine.load('track.mp3');
+  await engine.play();
+}
+
+describe('createMediaEngine (injected element)', () => {
+  it('leaves the loading status when a stalled source resumes', async () => {
+    const { audio, engine } = mediaEngine();
+    await playLoaded(engine);
+    expect(engine.getState().status).toBe('playing');
+
+    // The source ran dry: the player shows its loading block.
+    audio.dispatchEvent(new Event('waiting'));
+    expect(engine.getState().status).toBe('loading');
+
+    // Resumed playback only announces `playing`; without that listener the
+    // status would stay `loading` while the audio is already running.
+    audio.dispatchEvent(new Event('playing'));
+    expect(engine.getState().status).toBe('playing');
+  });
+
+  it('pauses a stalled element and ignores a late `playing` event', async () => {
+    const { audio, engine } = mediaEngine();
+    await playLoaded(engine);
+    audio.dispatchEvent(new Event('waiting'));
+
+    engine.pause();
+    expect(audio.pauseCalls).toBe(1);
+    expect(audio.paused).toBe(true);
+    expect(engine.getState().status).toBe('paused');
+
+    // A stale event from the aborted resume must not claim playback again.
+    audio.dispatchEvent(new Event('playing'));
+    expect(engine.getState().status).toBe('paused');
+  });
+
+  it('does not move a source that is still loading to `paused`', () => {
+    const { audio, engine } = mediaEngine();
+    audio.autoMetadata = false;
+    const listener = vi.fn();
+    engine.subscribe(listener);
+
+    engine.load('track.mp3');
+    expect(engine.getState().status).toBe('loading');
+
+    const seen = listener.mock.calls.length;
+    engine.pause();
+    // There is nothing playing to pause, and the loading status has to survive
+    // for `loadedmetadata` to turn it into `ready`.
+    expect(audio.pauseCalls).toBe(0);
+    expect(engine.getState().status).toBe('loading');
+    expect(listener).toHaveBeenCalledTimes(seen);
+
+    audio.dispatchEvent(new Event('loadedmetadata'));
+    expect(engine.getState().status).toBe('ready');
+  });
+});

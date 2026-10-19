@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   DEFAULT_SEEK_STEP,
   DEFAULT_VOLUME_STEP,
@@ -8,7 +8,7 @@ import {
   type QueueItemView,
 } from '@nickkupriyanov/soundline-core';
 import { useAnimations, useClassNames, useComponents, usePlayerContext, useUI } from '../context';
-import { useSlider } from '../hooks/useSlider';
+import { VOLUME_TRACK_INSET, useSlider } from '../hooks/useSlider';
 import { QueueList } from './QueueList';
 import { TimeDisplay } from './TimeDisplay';
 
@@ -41,12 +41,17 @@ function stateOf(view: { error: unknown; loading: boolean; empty: boolean }): Vi
  * The full widget: the card, the state blocks, now playing, the playhead, the
  * transport, the volume control and the queue.
  *
+ * The ready card is composed in four blocks — now playing, the `progress` group
+ * (seek bar + time), the `controls` group (transport + volume) and the queue —
+ * so the spacing inside a group belongs to the group, not to a negative margin
+ * on its neighbour.
+ *
  * Every section is a part from `SoundlineComponents`, so an application may
  * replace any of them. What this view keeps is what a replacement must not have
  * to reproduce: the themed frame, the labelled region, the polite announcements,
- * focus management, the two prepared slider bundles, and the three places where
- * the animation kit steps in (the artwork, the states' height, and the playing
- * flag the stylesheet reads). The sliders' maths lives
+ * focus management, the retry hand-off, the two prepared slider bundles, and the
+ * three places where the animation kit steps in (the artwork, the states'
+ * height, and the playing flag the stylesheet reads). The sliders' maths lives
  * in the parts' own prepared props rather than in the parts.
  */
 export function PlayerView() {
@@ -71,6 +76,21 @@ export function PlayerView() {
   const cardRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
   const previousTrackRef = useRef<string | null>(view.nowPlaying?.trackId ?? null);
+  /**
+   * The last element inside the card that held the focus, and whether the focus
+   * was still inside when it moved.
+   *
+   * A removed element fires `focusout` with no `relatedTarget` when the document
+   * has focus — exactly like a move to plain text or an empty part of the page.
+   * The flag alone therefore cannot tell "the library replaced the content" from
+   * "the visitor left": the element is the tiebreaker. A microtask after the
+   * event is late enough for the unmount to have happened, so a node that is
+   * still connected there belongs to a visitor who left, and is forgotten; one
+   * that is gone belongs to the content swap the effect below has to cover. A
+   * browser that drops the focus without the event is covered by the same pair.
+   */
+  const focusInsideRef = useRef(false);
+  const lastFocusRef = useRef<Element | null>(null);
 
   const trackId = view.nowPlaying?.trackId ?? null;
   const state = stateOf(view);
@@ -138,6 +158,7 @@ export function PlayerView() {
     },
     className: cls('volumeSlider'),
     style: (value) => ({ '--sn-volume-percent': `${Math.round(value * 100)}%` }) as CSSProperties,
+    trackInset: VOLUME_TRACK_INSET,
     onChange: (value) => {
       if (value !== view.volumeView.volume) actions.setVolume(value);
       if (view.volumeView.muted) actions.toggleMute();
@@ -149,12 +170,59 @@ export function PlayerView() {
 
   /* -- focus ---------------------------------------------------------------- */
 
+  // Keeps track of whether the focus is inside the card. This has to be observed
+  // rather than read at render time: by the time the effect below runs, a control
+  // that unmounted with the previous render has already handed the focus to
+  // `<body>`, and nothing in the DOM says where it came from.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+
+    const inside = (node: EventTarget | null): boolean =>
+      node instanceof Node && (cardRef.current?.contains(node) ?? false);
+
+    const onFocusIn = (event: FocusEvent): void => {
+      const target = event.target instanceof Element ? event.target : null;
+      const inCard = inside(target);
+      lastFocusRef.current = inCard ? target : null;
+      focusInsideRef.current = inCard;
+    };
+    const onFocusOut = (event: FocusEvent): void => {
+      // Moving between two controls of the card is not leaving it.
+      if (inside(event.relatedTarget)) return;
+      focusInsideRef.current = false;
+
+      /*
+       * With no related target this is either the visitor clicking plain text
+       * (nothing gains the focus) or the widget unmounting the control that had
+       * it. The node answers a microtask later: still connected means the
+       * visitor left and the ref must be forgotten, gone means the effect below
+       * has a focus to take back.
+       */
+      const target = event.target;
+      if (!(target instanceof Element) || !inside(target)) return;
+      queueMicrotask(() => {
+        if (lastFocusRef.current === target && target.isConnected) {
+          lastFocusRef.current = null;
+        }
+      });
+    };
+
+    document.addEventListener('focusin', onFocusIn);
+    document.addEventListener('focusout', onFocusOut);
+    return () => {
+      document.removeEventListener('focusin', onFocusIn);
+      document.removeEventListener('focusout', onFocusOut);
+    };
+  }, []);
+
   // Two things are kept true here. Nothing is focused by the library on the way
   // in unless `autoFocus` asks for it, and a content swap never leaves the focus
   // on `<body>`: when the track changes, or the widget trades its controls for a
-  // state block (a failure, an empty list), the card takes the focus back. A
-  // visitor who is somewhere else on the page keeps it — the check is the focus
-  // actually having escaped, not the render having happened.
+  // state block (a failure, an empty list), the card takes back the focus it
+  // lost — including the focus that went with a removed row. A visitor who is
+  // somewhere else on the page keeps it — the check is the focus actually having
+  // escaped from inside the card, not the render having happened.
+  // `preventScroll` keeps that return from moving the page.
   useEffect(() => {
     const previous = previousTrackRef.current;
     previousTrackRef.current = trackId;
@@ -170,8 +238,52 @@ export function PlayerView() {
     if (previous === null) return;
 
     const active = typeof document === 'undefined' ? null : document.activeElement;
-    if (!active || active === document.body) cardRef.current?.focus();
+    if (active && active !== document.body) return;
+
+    /*
+     * The control that held the focus may have gone with the content this render
+     * replaced — deleting the last track, for one. That is the library's focus to
+     * take back, not a visitor walking away, and the `focusout` that removal
+     * produced has already cleared `focusInsideRef`. The element itself is still
+     * the honest signal: it is detached now, while an element the visitor moved
+     * to is not.
+     */
+    const last = lastFocusRef.current;
+    const removedFromCard = last !== null && !last.isConnected;
+
+    if (!focusInsideRef.current && !removedFromCard) return;
+    focusInsideRef.current = false;
+    lastFocusRef.current = null;
+    cardRef.current?.focus({ preventScroll: true });
   }, [trackId, state, ui.autoFocus]);
+
+  /* -- retry ---------------------------------------------------------------- */
+
+  /**
+   * Runs a retry without letting the focus fall to `<body>`.
+   *
+   * The error block's button is replaced by the loading block in the same
+   * render that starts the retry, and replaced again by the new error or the
+   * ready state. If the activation came from inside the card, the focus moves
+   * to the card — which survives every one of those swaps — *before* the action
+   * runs. The card is a `tabIndex={-1}` region, so the next `Tab` continues from
+   * it into whatever is now the first control: the new Retry button after
+   * another failure, the seek bar after a recovery.
+   *
+   * Only the user's activation goes through here. A programmatic
+   * `actions.retry()` from the application never lands in this path, so it never
+   * moves the focus. `preventScroll` keeps the hand-off from moving the page.
+   */
+  const retry = useCallback(() => {
+    if (typeof document !== 'undefined') {
+      const active = document.activeElement;
+      const card = cardRef.current;
+      if (card && active && card.contains(active)) {
+        card.focus({ preventScroll: true });
+      }
+    }
+    actions.retry();
+  }, [actions]);
 
   return (
     <div
@@ -193,9 +305,9 @@ export function PlayerView() {
           {state === 'error' && view.error ? (
             <ErrorState
               title={ui.messages.errorLabel}
-              message={ui.messages.genericError}
+              message={view.errorMessage}
               retryLabel={ui.messages.retryLabel}
-              onRetry={view.actions.canRetry ? actions.retry : undefined}
+              onRetry={view.actions.canRetry ? retry : undefined}
             />
           ) : state === 'loading' ? (
             <Loading label={ui.messages.loadingLabel} />
@@ -220,33 +332,41 @@ export function PlayerView() {
                 </NowPlaying>
               ) : null}
 
-              <SeekBar progress={view.progress} percent={seekPercent} slotProps={seek.slotProps} />
+              <div className={cls('progress')}>
+                <SeekBar
+                  progress={view.progress}
+                  percent={seekPercent}
+                  slotProps={seek.slotProps}
+                />
 
-              <TimeDisplay progress={view.progress} />
+                <TimeDisplay progress={view.progress} />
+              </div>
 
-              <Transport
-                transport={view.transport}
-                slotProps={{ className: cls('transport') }}
-                onToggle={actions.toggle}
-                onNext={actions.next}
-                onPrevious={actions.previous}
-                onShuffle={actions.setShuffle}
-                onLoop={actions.setLoop}
-              />
+              <div className={cls('controls')}>
+                <Transport
+                  transport={view.transport}
+                  slotProps={{ className: cls('transport') }}
+                  onToggle={actions.toggle}
+                  onNext={actions.next}
+                  onPrevious={actions.previous}
+                  onShuffle={actions.setShuffle}
+                  onLoop={actions.setLoop}
+                />
 
-              <Volume
-                view={view.volumeView}
-                percent={Math.round(volume.value * 100)}
-                slotProps={{ className: cls('volume') }}
-                buttonProps={{
-                  type: 'button',
-                  className: cls('volumeButton'),
-                  'aria-label': view.volumeView.label,
-                  'aria-pressed': view.volumeView.muted,
-                  onClick: actions.toggleMute,
-                }}
-                sliderProps={volume.slotProps}
-              />
+                <Volume
+                  view={view.volumeView}
+                  percent={Math.round(volume.value * 100)}
+                  slotProps={{ className: cls('volume') }}
+                  buttonProps={{
+                    type: 'button',
+                    className: cls('volumeButton'),
+                    'aria-label': view.volumeView.label,
+                    'aria-pressed': view.volumeView.muted,
+                    onClick: actions.toggleMute,
+                  }}
+                  sliderProps={volume.slotProps}
+                />
+              </div>
 
               {view.queue.show ? (
                 <Queue

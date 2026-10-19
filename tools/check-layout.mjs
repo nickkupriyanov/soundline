@@ -93,9 +93,7 @@ try {
   ]);
   report = JSON.parse(stdout);
 } catch (error) {
-  console.error(
-    `✗ layout check could not run — is the playground preview serving ${url}?`,
-  );
+  console.error(`✗ layout check could not run — is the playground preview serving ${url}?`);
   throw error;
 }
 
@@ -115,11 +113,11 @@ for (const entry of report.measured) {
   byLayout.set(entry.layout, list);
 }
 for (const [layout, entries] of byLayout) {
-  const widths = [...new Set(entries.map((entry) => entry.width))];
+  const widths = [...new Set(entries.map((entry) => entry.root))];
   if (widths.length !== 1) {
     failures.push(
       `${layout} cases render at different widths: ${entries
-        .map((entry) => `${entry.name} ${entry.width}px`)
+        .map((entry) => `${entry.name} ${entry.root}px`)
         .join(', ')}`,
     );
   }
@@ -135,9 +133,7 @@ if (report.narrow !== 280) {
   failures.push(`280px parent → ${report.narrow}px widget (expected 280)`);
 }
 if (report.wide !== report.measured[0].root) {
-  failures.push(
-    `1000px parent → ${report.wide}px widget (expected ${report.measured[0].root}px)`,
-  );
+  failures.push(`1000px parent → ${report.wide}px widget (expected ${report.measured[0].root}px)`);
 }
 
 console.log(

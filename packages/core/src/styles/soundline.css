@@ -54,18 +54,23 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  padding: 2px 4px 0;
+  /*
+   * One text column for the whole queue. Left: the row's 10px padding, then the
+   * equalizer's reserved 14px slot and its 6px gap — the title and the artist
+   * both start there (the artist is indented by the slot, see `.sn-track-artist`).
+   * Right: the same 44px inset the durations end at — 10px of row padding, the
+   * 8px gap and the 26px removal column — so the count and the durations share
+   * one right edge instead of drifting apart.
+   */
+  padding: 2px 44px 0 30px;
 }
 
 .sn-queue-count {
   flex: 0 0 auto;
   margin-left: auto;
-  padding: 4px 10px;
   font-size: 12px;
   font-weight: 500;
   color: var(--sn-text-muted);
-  background: var(--sn-control);
-  border-radius: var(--sn-radius-pill);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -83,12 +88,28 @@
 .sn-artwork {
   position: relative;
   flex: 0 0 auto;
-  width: 72px;
-  height: 72px;
+  width: var(--sn-artwork-size);
+  height: var(--sn-artwork-size);
   overflow: hidden;
   background: var(--sn-control);
   border: 1px solid var(--sn-border);
   border-radius: var(--sn-artwork-radius);
+}
+
+/*
+ * The cover grows in the full card once there is room for it. The compact
+ * composition keeps a tighter 64px so the labels beside it still fit the 300px
+ * panel. `--sn-artwork-size` is the only size the box reads; these two rules
+ * pick its value for the layout.
+ */
+.sn-root[data-sn-layout='compact'] .sn-artwork {
+  --sn-artwork-size: 64px;
+}
+
+@container soundline (min-width: 340px) {
+  .sn-root[data-sn-layout='card'] .sn-artwork {
+    --sn-artwork-size: 88px;
+  }
 }
 
 .sn-artwork > img,
@@ -137,6 +158,30 @@
 
 .sn-album {
   color: var(--sn-text-subtle);
+}
+
+/* Composition groups ------------------------------------------------------- */
+
+/*
+ * The card's vertical rhythm is the gap between these groups. The two wrappers
+ * exist so a group can own its internal spacing instead of the card trying to
+ * correct it with negative margins:
+ *
+ *   now playing → progress (track + time) → controls (transport + volume) → queue
+ */
+.sn-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sn-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 /* Transport ---------------------------------------------------------------- */
@@ -246,7 +291,8 @@
   display: flex;
   align-items: center;
   width: 100%;
-  /* The visual track is thin; the control stays a comfortable touch target. */
+  /* The visual track is thin; the control stays a comfortable target width-wise.
+     A coarse pointer gets a taller invisible hit area below. */
   height: 22px;
   padding: 0;
   background: none;
@@ -255,18 +301,36 @@
   touch-action: none;
 }
 
+/*
+ * Touch has no precision of its own: the 22px bar is small under a finger, while
+ * growing the box would change the card's rhythm. The pseudo-element extends the
+ * hit area to 44px without moving a pixel — it is transparent, carries no
+ * pointer target of its own (events land on the slider), and only exists where
+ * the pointer is coarse.
+ */
+@media (pointer: coarse) {
+  .sn-seek::after {
+    content: '';
+    position: absolute;
+    inset: -11px 0;
+  }
+}
+
 .sn-seek[aria-disabled='true'],
 .sn-seek:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
+/* The visual track. It must not clip: the handle is 14px on a 6px bar and hangs
+   over both ends of it, so `overflow: hidden` sliced the circle at 0% and 100%
+   and flattened its top and bottom everywhere else. The fill and the buffered
+   bar carry their own radius, and the playing sweep is clipped by the fill. */
 .sn-seek-track {
   position: relative;
   width: 100%;
   height: var(--sn-seek-height);
-  overflow: hidden;
-  background: var(--sn-control);
+  background: var(--sn-track);
   border-radius: var(--sn-radius-pill);
 }
 
@@ -335,17 +399,28 @@
 
 /* Volume ------------------------------------------------------------------- */
 
+/*
+ * The compact centred row: the mute button and the slider are the only things in
+ * the flow, and they are centred in the card, capped at `--sn-volume-width`.
+ * The percentage is not a third column: it is an absolute hint beside the
+ * slider (see `.sn-volume-value`), so the visible pair is centred at rest and
+ * never moves when the number appears.
+ */
 .sn-volume {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  width: 100%;
+  max-width: var(--sn-volume-width);
   min-width: 0;
+  margin-inline: auto;
 }
 
 .sn-volume-button {
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
+  flex: 0 0 32px;
   width: 32px;
   height: 32px;
   padding: 0;
@@ -364,12 +439,19 @@
   background: var(--sn-control);
 }
 
+/*
+ * The slider is a full-height touch target, but its visual track is inset by
+ * 7px on both sides: the 14px thumb then fits inside the track at 0% and 100%.
+ * `useSlider` maps the pointer onto the same inset span, and the binding writes
+ * the thumb's `left` with the matching correction. The fill is the pseudo
+ * element's own background, so it spans exactly the visible track.
+ */
 .sn-volume-slider {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1 1 auto;
-  min-width: 60px;
+  flex: 0 1 124px;
+  min-width: 0;
   height: 22px;
   padding: 0;
   background: none;
@@ -378,27 +460,38 @@
   touch-action: none;
 }
 
-/* The track is the slider itself; `--sn-volume-percent` draws the fill. */
 .sn-volume-slider::before {
   content: '';
   position: absolute;
-  inset: 50% 0 auto;
+  inset: 50% 7px auto;
   height: var(--sn-seek-height);
   margin-top: calc(var(--sn-seek-height) / -2);
   background: linear-gradient(
     to right,
     var(--sn-seek-fill) 0,
     var(--sn-seek-fill) var(--sn-volume-percent, 0%),
-    var(--sn-control) var(--sn-volume-percent, 0%),
-    var(--sn-control) 100%
+    var(--sn-track) var(--sn-volume-percent, 0%),
+    var(--sn-track) 100%
   );
   border-radius: var(--sn-radius-pill);
+}
+
+/*
+ * The same coarse-pointer hit area as the seek bar, with one exception: the
+ * transport sits 8px above the row, so upward the target stops at the gap
+ * instead of covering the bottom of a real button. 7 + 22 + 11 = 40px tall.
+ */
+@media (pointer: coarse) {
+  .sn-volume-slider::after {
+    content: '';
+    position: absolute;
+    inset: -7px 0 -11px;
+  }
 }
 
 .sn-volume-thumb {
   position: absolute;
   top: 50%;
-  left: 0;
   width: 14px;
   height: 14px;
   margin: -7px 0 0 -7px;
@@ -417,24 +510,49 @@
   opacity: 0.5;
 }
 
+/*
+ * The percentage is feedback, not a second control: no tab stop, and hidden
+ * from the assistive tree because the slider already speaks the same value in
+ * `aria-valuetext`. It is also outside the flow: absolutely positioned beside
+ * the slider, so it adds no column, and the centred pair of mute and bar never
+ * moves when the number appears. The hint is hidden until the row has the
+ * keyboard focus or the slider is dragged.
+ */
+.sn-volume-value {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sn-text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--sn-duration-fast) var(--sn-ease-standard);
+}
+
+.sn-volume:focus-within .sn-volume-value,
+.sn-volume-slider[data-sn-dragging='true'] .sn-volume-value {
+  opacity: 1;
+}
+
 /* Queue -------------------------------------------------------------------- */
 
+/*
+ * The queue is part of the card, not a second card inside it: no panel fill, no
+ * frame, no rounding and no inset of its own. The header and the scrolling list
+ * are the only things it holds.
+ */
 .sn-queue {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-  padding: 10px;
-  background: var(--sn-panel);
-  border: 1px solid var(--sn-border);
-  border-radius: var(--sn-radius-panel);
-}
-
-.sn-queue-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .sn-queue-list {
@@ -442,12 +560,27 @@
   flex-direction: column;
   gap: 2px;
   margin: 0;
-  padding: 0;
   /* With a maximum height the list itself scrolls, and the header stays put. */
   max-height: var(--sn-queue-max-height);
   overflow-y: auto;
   overscroll-behavior: contain;
   list-style: none;
+  /*
+   * A row cut by the cap has to read as "the list continues", not as a broken
+   * layout. The bottom of the viewport fades — but only the padding, once the
+   * list is scrolled to its end: the padding is exactly the height of the
+   * fade, so the last row sits above the dimmed strip instead of inside it.
+   * `scroll-padding-bottom` gives keyboard focus the same clearance; a mask
+   * never takes the pointer, so dragging and clicking still reach the rows.
+   */
+  padding: 0 0 var(--sn-queue-fade);
+  scroll-padding-bottom: var(--sn-queue-fade);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sn-queue-fade)), transparent);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--sn-queue-fade)),
+    transparent
+  );
 }
 
 /* The row is a grid: the button that selects the track on the left, the button
@@ -468,7 +601,7 @@
 
 .sn-track-item:hover {
   color: var(--sn-text);
-  background: var(--sn-control);
+  background: var(--sn-control-hover);
 }
 
 /* The current row is drawn from its class, not from `aria-current`: the state is
@@ -476,12 +609,14 @@
    reads it from. */
 .sn-track-item-active {
   color: var(--sn-text);
-  background: var(--sn-control);
+  background: var(--sn-control-hover);
 }
 
 .sn-track-item-playing {
   color: var(--sn-text);
-  background: var(--sn-accent-soft);
+  /* About 60% of the old panel tint: the row still reads as playing without
+     becoming a second surface inside the card. */
+  background: color-mix(in srgb, var(--sn-accent-soft) 60%, transparent);
 }
 
 .sn-track-item-playing .sn-track-title {
@@ -504,6 +639,13 @@
 }
 
 .sn-track-artist {
+  /*
+   * Both text lines start on one vertical. The title is preceded by the
+   * equalizer's reserved 14px slot and its 6px gap (`--sn-track-line` above),
+   * so the artist is indented by exactly that: 20px. Without it the two lines of
+   * one track start on two axes and the queue reads as a staircase.
+   */
+  padding-left: 20px;
   overflow: hidden;
   font-size: 12px;
   color: var(--sn-text-subtle);
@@ -511,16 +653,21 @@
   text-overflow: ellipsis;
 }
 
-/* The button that selects the track fills the left column of the row and stacks
-   the two text lines: the title line — the playing bars and the title — and the
-   artist underneath. It is drawn like the row because it is the row's content;
-   the row itself only holds the layouts of the two buttons. */
+/*
+ * The selecting button is the row's content: title and artist stacked in one
+ * column, the duration in a second, stable column on the right. The duration
+ * element is always rendered — an unknown duration leaves the column empty
+ * rather than letting the title reflow into it.
+ */
 .sn-track-select {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  row-gap: 2px;
+  column-gap: 8px;
   grid-row: 1 / span 2;
   grid-column: 1;
+  align-items: center;
   min-width: 0;
   padding: 8px 10px;
   color: inherit;
@@ -530,6 +677,35 @@
   border: 0;
   border-radius: var(--sn-radius-control);
   cursor: pointer;
+}
+
+.sn-track-line {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.sn-track-artist {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.sn-track-duration {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  min-width: 38px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--sn-text-subtle);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* A row that is not playing still reserves the equalizer's width; only its bars
+   are hidden, so the title does not move when playback starts. */
+.sn-eq[data-sn-idle='true'] > span {
+  visibility: hidden;
+  animation: none;
 }
 
 .sn-track-remove {
@@ -559,6 +735,14 @@
 .sn-track-item:focus-within .sn-track-remove,
 .sn-track-remove:focus-visible {
   opacity: 1;
+}
+
+/* Touch devices have no hover to reveal the control, so it is always visible
+   there; `focus-within` above still covers a keyboard attached to one. */
+@media (hover: none) {
+  .sn-track-remove {
+    opacity: 1;
+  }
 }
 
 .sn-track-remove:hover {
@@ -599,7 +783,7 @@
   padding: 6px 14px;
   font: inherit;
   font-size: 13px;
-  color: var(--sn-accent-contrast);
+  color: var(--sn-danger-contrast);
   background: var(--sn-danger);
   border: 0;
   border-radius: var(--sn-radius-pill);

@@ -5,7 +5,9 @@
   align-items: flex-start;
   justify-content: center;
   min-height: 100vh;
-  padding: 32px;
+  /* The panels keep breathing room on a desktop, and leave the phone enough
+     width for a full card: at 320px this is 16px a side, 288px of content. */
+  padding: 32px clamp(16px, 4vw, 32px);
 }
 
 .gallery[data-sn-theme='dark'] {
@@ -23,6 +25,15 @@
   flex-direction: column;
   gap: 12px;
   margin: 0;
+  /*
+   * A figure is a flex item, so its automatic minimum size is the widget's
+   * intrinsic 380px and it would refuse to shrink. Without `min-width` and
+   * `max-width` a 320px viewport got a 380px card at left: -30 — clipped on both
+   * sides, with the left part outside the start of the scroll. The widget itself
+   * already caps at `max-width: 100%`; the figure has to be allowed to show it.
+   */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .gallery__item figcaption {

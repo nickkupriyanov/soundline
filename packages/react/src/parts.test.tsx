@@ -303,9 +303,14 @@ describe('component replacement', () => {
     expect(beta).toHaveAttribute('tabindex', '0');
     expect(alpha).toHaveAttribute('tabindex', '-1');
 
-    // Removing is deliberately not a selection.
+    // Removing is deliberately not a selection. The row leaves with its exit, so
+    // it is still in the document for a moment — inert, and in the place it was.
     await user.click(screen.getByTestId('remove-b'));
-    expect(screen.queryByTestId('row-b')).toBeNull();
+    expect(nowPlayingTitle()).toBe('Alpha');
+    expect(screen.getByTestId('row-b')).toHaveAttribute('data-sn-exiting', 'true');
+    expect(screen.getByTestId('remove-b')).toHaveAttribute('tabindex', '-1');
+
+    await waitFor(() => expect(screen.queryByTestId('row-b')).toBeNull());
     expect(nowPlayingTitle()).toBe('Alpha');
   });
 

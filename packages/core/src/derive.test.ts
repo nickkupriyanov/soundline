@@ -236,6 +236,7 @@ describe('derivePlayerView — states and announcement', () => {
     const view = derivePlayerView(failed, config);
     expect(view.error?.code).toBe('NETWORK_FAILURE');
     expect(view.live.message).toBe(defaultMessages.en.genericError);
+    expect(view.errorMessage).toBe(defaultMessages.en.genericError);
   });
 
   it('announces a track list that could not be fetched', () => {
@@ -250,7 +251,27 @@ describe('derivePlayerView — states and announcement', () => {
     expect(view.error?.code).toBe('NETWORK_FAILURE');
     expect(view.loading).toBe(false);
     expect(view.empty).toBe(false);
-    expect(view.live.message).toBe(defaultMessages.en.genericError);
+    // A failed list is not a failed track: both the region and the error state
+    // name the playlist instead of blaming a track nobody tried to play.
+    expect(view.live.message).toBe(defaultMessages.en.queueError);
+    expect(view.errorMessage).toBe(defaultMessages.en.queueError);
+  });
+
+  it('carries no failure copy while nothing has failed', () => {
+    expect(derivePlayerView(state(), config).errorMessage).toBe('');
+  });
+
+  it('names an unsupported format instead of blaming the load', () => {
+    const failed = playerReducer(state(), {
+      type: 'engineFailed',
+      error: { code: 'NOT_SUPPORTED', phase: 'source', message: 'flac' },
+    });
+
+    const view = derivePlayerView(failed, config);
+    // The dictionary has a string for this case; a failure that has its own words
+    // must not be rendered with the generic ones.
+    expect(view.live.message).toBe(defaultMessages.en.unsupportedLabel);
+    expect(view.errorMessage).toBe(defaultMessages.en.unsupportedLabel);
   });
 
   it('announces the end of the playlist', () => {

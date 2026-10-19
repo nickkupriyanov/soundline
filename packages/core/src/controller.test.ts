@@ -7,7 +7,7 @@ import type {
   PlayerControllerOptions,
   PlayerSnapshot,
 } from './controller';
-import type { PlaybackEngine } from './engine';
+import { createMediaEngine, type PlaybackEngine } from './engine';
 import { createMockAdapter, createMockEngine } from './mock';
 import type { MockEngineOptions } from './mock';
 import type { EngineState, Track } from './types';
@@ -134,6 +134,41 @@ async function settle(ms = 0): Promise<void> {
 const snapshot = (controller: { getSnapshot(): PlayerSnapshot }): PlayerSnapshot =>
   controller.getSnapshot();
 
+/**
+ * The media element the real engine needs, without a DOM: enough for the events
+ * the engine listens to and the properties it mirrors.
+ */
+class FakeAudio extends EventTarget {
+  src = '';
+  currentTime = 0;
+  duration = 100;
+  volume = 1;
+  muted = false;
+  playbackRate = 1;
+  preload = 'metadata';
+  paused = true;
+  error: MediaError | null = null;
+  buffered = { length: 0, start: () => 0, end: () => 0 };
+  pauseCalls = 0;
+
+  load(): void {
+    this.duration = 100;
+    this.dispatchEvent(new Event('loadedmetadata'));
+  }
+
+  play(): Promise<void> {
+    this.paused = false;
+    this.dispatchEvent(new Event('play'));
+    return Promise.resolve();
+  }
+
+  pause(): void {
+    this.pauseCalls += 1;
+    this.paused = true;
+    this.dispatchEvent(new Event('pause'));
+  }
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
 });
@@ -240,6 +275,45 @@ describe('start and stop', () => {
     await settle();
 
     expect(tracked.calls.length).toBe(callsAfterStop);
+  });
+
+  it('loads the source again when a new start follows a cancelled load', async () => {
+    const adapter: TrackSourceAdapter = {
+      getTracks: () => Promise.resolve([{ id: 'a', title: 'Alpha' }]),
+      resolveSource(track, { signal }) {
+        return new Promise<ResolvedSource>((resolve, reject) => {
+          const timer = setTimeout(() => resolve({ src: `${track.id}.mp3` }), 500);
+          signal.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(timer);
+              const error = new Error('aborted');
+              error.name = 'AbortError';
+              reject(error);
+            },
+            { once: true },
+          );
+        });
+      },
+    };
+    const { controller, inner, tracked } = setup({ adapter });
+
+    controller.start();
+    await settle();
+    controller.actions.play();
+    await settle();
+
+    // The source is still resolving when the player is torn down…
+    expect(tracked.loads).toEqual([]);
+    controller.stop();
+
+    // …so the restart must ask for it again instead of trusting the cancelled
+    // load's token and leaving the backend idle under `playing: true`.
+    controller.start();
+    await settle(600);
+
+    expect(tracked.loads).toEqual(['a.mp3']);
+    expect(inner.getState().status).toBe('playing');
   });
 });
 
@@ -575,6 +649,43 @@ describe('playback', () => {
     expect(handlers.onError).not.toHaveBeenCalled();
   });
 
+  it('pauses a stalled engine and does not resume it with the old intent', async () => {
+    const audio = new FakeAudio();
+    const engine = createMediaEngine({
+      createElement: () => audio as unknown as HTMLAudioElement,
+    });
+    const controller = createPlayerController({
+      engine,
+      adapter: createMockAdapter({ tracks: TRACKS }),
+    });
+
+    controller.start();
+    await settle();
+    controller.actions.play();
+    await settle();
+    expect(engine.getState().status).toBe('playing');
+
+    // The source runs dry: the intent is still "playing", the widget is loading.
+    audio.dispatchEvent(new Event('waiting'));
+    await settle();
+    expect(snapshot(controller).state.playing).toBe(true);
+    expect(snapshot(controller).view.loading).toBe(true);
+
+    controller.actions.pause();
+    await settle();
+
+    const idle = snapshot(controller);
+    expect(idle.state.playing).toBe(false);
+    expect(idle.view.loading).toBe(false);
+    expect(audio.pauseCalls).toBe(1);
+    expect(engine.getState().status).toBe('paused');
+
+    // A late `playing` from the aborted resume cannot restart the intent.
+    audio.dispatchEvent(new Event('playing'));
+    expect(engine.getState().status).toBe('paused');
+    expect(snapshot(controller).state.playing).toBe(false);
+  });
+
   it('throttles progress but always reports the last position', async () => {
     const { controller, handlers } = setup({ progressIntervalMs: 1000 });
 
@@ -887,6 +998,31 @@ describe('reconfiguration', () => {
 
     expect(loaded).toEqual(['a.mp3']);
     expect(replacement.getState().volume).toBe(0.3);
+  });
+
+  it('stops the engine it replaces', async () => {
+    const { controller, inner } = setup();
+
+    controller.start();
+    await settle();
+    controller.actions.play();
+    await settle();
+    expect(inner.getState().status).toBe('playing');
+
+    const replacement = createMockEngine({ duration: DURATION });
+    controller.updateEngine(replacement);
+    await settle();
+
+    // The replaced backend is not the player's any more: it must not keep
+    // playing under the new one, while the intent carries over to the new engine.
+    expect(inner.getState().status).toBe('paused');
+    expect(replacement.getState().status).toBe('playing');
+    expect(snapshot(controller).view.transport.playing).toBe(true);
+
+    // A later stop belongs to the current engine only; the old one stays quiet.
+    controller.stop();
+    expect(inner.getState().status).toBe('paused');
+    expect(replacement.getState().status).toBe('paused');
   });
 
   it('exposes a serialisable engine reference', async () => {

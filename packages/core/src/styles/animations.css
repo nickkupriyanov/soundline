@@ -9,6 +9,8 @@
                                      one leaves
      .sn-stagger-item                a row of a stagger group, delayed by
                                      `--sn-index` (written inline)
+     .sn-track-item[data-sn-exiting] a row on its way out: it fades and collapses
+                                     while the queue holds it mounted
      .sn-height / .sn-height-inner   a container that follows the height of what
                                      it holds while it changes
    The Motion kit (see `@nickkupriyanov/soundline-react/motion`) draws the same
@@ -70,6 +72,45 @@
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+/* A row on its way out ------------------------------------------------------ */
+
+/*
+ * A row removed through the list stays mounted for the length of its exit, so it
+ * can leave instead of vanishing, and the rows below close the gap once it is
+ * unmounted. Both halves of that timing come from one number: the queue writes
+ * the duration inline as `--sn-exit-duration` and runs its removal timer with the
+ * same value, so the collapse and the unmount can never drift apart.
+ *
+ * The fade is over before the collapse is: the row is invisible by the time it
+ * is clipping its own content. `overflow` is here rather than in the row's own
+ * rule so the row is only ever clipped while it is going away.
+ *
+ * A kit that animates the exit itself marks its rows `data-sn-motion='true'` and
+ * takes over (the rule sits below the `animation: none` of the Motion kit).
+ */
+.sn-track-item[data-sn-exiting='true']:not([data-sn-motion='true']) {
+  overflow: hidden;
+  /* A row on its way out is not a target: the pointer falls through it. */
+  pointer-events: none;
+  animation: sn-row-out var(--sn-exit-duration, var(--sn-duration)) var(--sn-ease-soft) forwards;
+}
+
+@keyframes sn-row-out {
+  from {
+    max-height: var(--sn-row-max-height);
+    opacity: 1;
+  }
+
+  40% {
+    opacity: 0;
+  }
+
+  to {
+    max-height: 0;
+    opacity: 0;
   }
 }
 

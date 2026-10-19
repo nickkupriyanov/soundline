@@ -48,7 +48,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD-PARTY-LICENSES.md"
   ],
   "publishConfig": {
     "access": "public"

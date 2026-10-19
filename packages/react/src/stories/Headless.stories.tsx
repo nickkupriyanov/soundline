@@ -54,7 +54,7 @@ function CustomPanel() {
       <p style={{ margin: '0 0 4px', fontSize: 12, opacity: 0.6 }}>{ui.messages.playerLabel}</p>
 
       {view.error ? (
-        <p style={{ margin: '0 0 16px', fontSize: 14 }}>{ui.messages.genericError}</p>
+        <p style={{ margin: '0 0 16px', fontSize: 14 }}>{view.errorMessage}</p>
       ) : view.loading ? (
         <p style={{ margin: '0 0 16px', fontSize: 14 }}>{ui.messages.loadingLabel}</p>
       ) : view.empty ? (

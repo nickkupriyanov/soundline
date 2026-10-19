@@ -1,5 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { createMockAdapter, type SoundlineTheme } from '../index';
+import {
+  PlaybackError,
+  createMockAdapter,
+  type SoundlineTheme,
+  type TrackSourceAdapter,
+} from '../index';
 import { DemoPlayer, demoTracks, demoTracksUnresolved } from './demo';
 
 /**
@@ -56,6 +61,33 @@ const meta: Meta<typeof DemoPlayer> = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+/**
+ * A track source that refuses its first list request and succeeds afterwards.
+ *
+ * The story starts in the same error a real failed load produces, and pressing
+ * Retry actually recovers: the card keeps the focus and the controls replace the
+ * error block. A fresh adapter is created per render so revisiting the story
+ * starts from the failure again.
+ */
+function retryableAdapter(): TrackSourceAdapter {
+  const inner = createMockAdapter({ tracks: demoTracks, latency: 300 });
+  let failed = false;
+
+  return {
+    async getTracks(query) {
+      if (!failed) {
+        failed = true;
+        throw new PlaybackError({
+          code: 'NETWORK_FAILURE',
+          message: 'Soundline: the story fails the first list request on purpose',
+        });
+      }
+      return inner.getTracks(query);
+    },
+    resolveSource: (track, options) => inner.resolveSource!(track, options),
+  };
+}
 
 export const Idle: Story = {
   name: 'Idle — first track, paused',
@@ -135,6 +167,25 @@ export const ListFailed: Story = {
       description: {
         story:
           '`getTracks` failed. The error block carries the localised message and a retry button, and `canRetry` is on because the list is what failed.',
+      },
+    },
+  },
+};
+
+export const RetryRecovers: Story = {
+  name: 'Error — retry recovers',
+  render: (args, context) => (
+    <DemoPlayer
+      {...args}
+      adapter={retryableAdapter()}
+      theme={(context.globals.theme as SoundlineTheme) ?? args.theme}
+    />
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The first list request fails, so the card shows the error. Pressing Retry moves the focus to the card before the state swaps, then loads successfully; the next `Tab` reaches the seek bar. The scroll position is left alone.',
       },
     },
   },

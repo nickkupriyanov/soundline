@@ -101,7 +101,10 @@ describe('the playing track', () => {
 
     const root = document.querySelector('.sn-root') as HTMLElement;
     expect(root).toHaveAttribute('data-sn-playing', 'false');
-    expect(document.querySelector('.sn-eq')).toBeNull();
+    // The equalizer's place is reserved on every row before playback starts, but
+    // the bars are hidden until the row is actually playing.
+    const placeholders = document.querySelectorAll('.sn-eq[data-sn-idle="true"]');
+    expect(placeholders).toHaveLength(2);
 
     await user.click(screen.getByRole('button', { name: 'Play' }));
     await waitFor(() => expect(root).toHaveAttribute('data-sn-playing', 'true'));
@@ -109,15 +112,20 @@ describe('the playing track', () => {
     const active = screen.getByRole('button', { name: '1. Alpha' });
     const equalizer = active.querySelector('.sn-eq');
     expect(equalizer).not.toBeNull();
+    expect(equalizer).not.toHaveAttribute('data-sn-idle');
     expect(equalizer).toHaveAttribute('aria-hidden', 'true');
     expect(equalizer?.children).toHaveLength(3);
 
-    // Only the row that is playing carries it.
-    expect(screen.getByRole('button', { name: '2. Beta' }).querySelector('.sn-eq')).toBeNull();
+    // Only the row that is playing loses the idle flag; the other row keeps the
+    // reserved, invisible placeholder.
+    expect(screen.getByRole('button', { name: '2. Beta' }).querySelector('.sn-eq')).toHaveAttribute(
+      'data-sn-idle',
+      'true',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Pause' }));
     await waitFor(() => expect(root).toHaveAttribute('data-sn-playing', 'false'));
-    expect(document.querySelector('.sn-eq')).toBeNull();
+    expect(document.querySelector('.sn-eq')).toHaveAttribute('data-sn-idle', 'true');
   });
 });
 

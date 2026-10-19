@@ -17,7 +17,8 @@
  *
  * Along the way the packed manifests are asserted: the export map of each
  * package, the React package's dependency on core (resolved to a version, never
- * `workspace:`), and `motion` staying an optional peer.
+ * `workspace:`), `motion` staying an optional peer, and the tarball actually
+ * shipping the README and the LICENSE its `files` array promises.
  *
  * The layouts and the pinned versions come from the templates in
  * `tools/install-check/`; the tarball names are derived from the manifests, never
@@ -103,6 +104,13 @@ async function packedManifest(tarball) {
   return JSON.parse(
     await capture('tar', ['-xzOf', basename(tarball), 'package/package.json'], dirname(tarball)),
   );
+}
+
+/** Lists the entries of a tarball. */
+async function packedEntries(tarball) {
+  return (await capture('tar', ['-tzf', basename(tarball)], dirname(tarball)))
+    .split('\n')
+    .filter(Boolean);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -207,6 +215,23 @@ async function assertOptionalMotion(tarball) {
   console.log('  → motion: optional peer');
 }
 
+/**
+ * A tarball ships what its `files` array claims, licence and all.
+ *
+ * The point is the `files` array: a package that drops its README or its LICENSE
+ * from the tarball is a packaging regression nobody notices until it is published.
+ */
+async function assertShipFiles(label, tarball, entries) {
+  step(`assert the packed ${label} ships its documentation`);
+  const packed = await packedEntries(tarball);
+  for (const entry of entries) {
+    if (!packed.includes(entry)) {
+      throw new Error(`the packed ${label} does not contain ${entry}`);
+    }
+  }
+  console.log(`  → ${entries.join(', ')}`);
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Legs                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -305,6 +330,20 @@ const react = packed.find((entry) => entry.label.endsWith('soundline-react'));
 
 await assertExports(core.label, core.file, ['.', './dom', './styles.css']);
 await assertExports(react.label, react.file, ['.', './motion', './styles.css']);
+await assertShipFiles(core.label, core.file, [
+  'package/README.md',
+  'package/LICENSE',
+  'package/dist/index.js',
+  'package/dist/soundline.css',
+]);
+await assertShipFiles(react.label, react.file, [
+  'package/README.md',
+  'package/LICENSE',
+  'package/THIRD-PARTY-LICENSES.md',
+  'package/dist/index.js',
+  'package/dist/motion.js',
+  'package/dist/soundline.css',
+]);
 await assertPinned(react.label, react.file, core.label, core.version);
 await assertOptionalMotion(react.file);
 

@@ -1,0 +1,70 @@
+name: Release
+
+# The changesets flow: every change to a published package lands as a file in
+# `.changeset/`, and this workflow turns the recorded changes into a version PR
+# (new versions plus changelogs). Merging that PR is the release: the same job
+# then runs `pnpm release`, which builds the packages and publishes them.
+#
+# The version PR is opened with `GITHUB_TOKEN`, and GitHub suppresses workflow runs
+# that a `GITHUB_TOKEN` action triggers — so CI does not report on that PR. Its
+# content is only version numbers and changelogs, and `main` was green when it was
+# opened; run the checks locally before merging it, or wire up a PAT if the PR
+# should carry checks of its own.
+#
+# Publishing needs `NPM_TOKEN` in the repository secrets. Without it the job still
+# forms the version PR and says so instead of failing the branch. That guard lives
+# in `tools/publish.mjs`, not in the workflow: the action runs `publish` as an
+# executable command, so it cannot be a shell `if` (see the step below).
+
+on:
+  push:
+    branches: [main]
+
+# One release run at a time: a version PR must not race another publish.
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Version PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The action diffs against the branch to tell a version PR that is up to
+          # date from one that needs rewriting.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          # `changeset publish` publishes with the npm CLI this step configures.
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Open or update the version PR
+        uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          # An executable command, not a shell script: the action splits this into
+          # argv and spawns the first word, so operators such as `if` cannot be
+          # used here. The token check and the publish live in `tools/publish.mjs`.
+          publish: pnpm release:publish
+          commit: 'chore(release): version packages'
+          title: 'chore(release): version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # `setup-node --registry-url` writes `${NODE_AUTH_TOKEN}` into `.npmrc`,
+          # and the npm CLI `changeset publish` runs authenticates through it.
+          # `NPM_TOKEN` is kept as the repository's secret name (and the fallback
+          # `tools/publish.mjs` checks), but a token passed only there is invisible
+          # to npm.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

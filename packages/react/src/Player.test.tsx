@@ -150,15 +150,19 @@ describe('Player flow', () => {
     await waitFor(() => expect(screen.getByTestId('track')).toHaveTextContent('b'));
   });
 
-  it('keeps focus inside the card when a track change would drop it to <body>', async () => {
+  it('does not take the focus when a track change comes from outside the widget', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     await waitFor(() => expect(screen.getByTestId('track')).toHaveTextContent('a'));
 
+    // The change was asked for by a control outside the card. The focus was never
+    // the widget's, so the card must not pull it — or the page — into itself.
     await user.click(screen.getByRole('button', { name: 'next' }));
-    await waitFor(() => expect(screen.getByTestId('track')).toHaveTextContent('b'));
 
-    expect(screen.getByRole('region')).toHaveFocus();
+    await waitFor(() => expect(screen.getByTestId('track')).toHaveTextContent('b'));
+    const card = screen.getByRole('region', { name: 'Audio player' });
+    expect(card).not.toHaveFocus();
+    expect(card.contains(document.activeElement)).toBe(false);
   });
 });

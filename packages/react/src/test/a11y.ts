@@ -12,8 +12,9 @@ import { expect } from 'vitest';
  * elsewhere on purpose:
  *
  * - **Contrast.** jsdom applies no stylesheet (`css: false`) and has no canvas,
- *   so jest-axe switches its own colour rules off. The real check is a browser
- *   pass over the built stylesheet (`tools/check-layout.mjs`, Iteration 15).
+ *   so jest-axe switches its own colour rules off. Nothing automated measures the
+ *   palette in this version — it is a known limit (see the README, "Scope and
+ *   known limits") rather than something this run verifies.
  * - **What a screen reader actually says.** axe validates roles, names and
  *   states against a spec, not the announcement order. The announcement rules
  *   are asserted directly, on the live region.

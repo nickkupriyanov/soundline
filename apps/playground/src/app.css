@@ -38,16 +38,25 @@ body {
 
 .page__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 28px;
 }
 
+/* The title block has to be allowed to shrink: the package name is one long word,
+   and a flex item's automatic minimum size would otherwise keep it at ~330px and
+   push the page wider than a phone. */
+.page__header > div {
+  min-width: 0;
+}
+
 .page__header h1 {
   margin: 0 0 6px;
   font-size: 26px;
   letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 
 .page__header p {
@@ -131,10 +140,45 @@ body {
 .surface {
   display: flex;
   justify-content: center;
+  min-width: 0;
   padding: 40px 24px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--page-border);
   border-radius: 24px;
+}
+
+/* The accent-colour wrapper the playground puts around the player. It is a flex
+   item, so it needs `min-width: 0` to be allowed to shrink below the widget's
+   intrinsic width (`--sn-width`): without it the widget keeps 380px (or 300px in
+   compact) and hangs over the panel's rounded edge on a phone. */
+.surface__widget {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/*
+ * An accent preset has to land on the player's own root: `.sn-root` declares the
+ * accent family itself, so a variable set on an ancestor is simply overwritten
+ * by that declaration. This rule is one specificity step above both `.sn-root`
+ * and `.sn-root[data-sn-theme='light']`, and it derives the family from the hue
+ * in terms of the theme's own text colour — a light ink is right on the dark
+ * theme and unreadable on the light one. `data-accent` is only present when a
+ * preset other than the default is chosen, so the built-in palette is untouched
+ * otherwise.
+ */
+.surface__widget[data-accent] .sn-root[data-sn-theme] {
+  --sn-accent: var(--pg-accent);
+  --sn-accent-hover: color-mix(in srgb, var(--pg-accent) 88%, #fff);
+  --sn-accent-press: color-mix(in srgb, var(--pg-accent) 88%, #000);
+  --sn-accent-contrast: var(--pg-accent-contrast, #fff);
+  --sn-accent-ink: color-mix(in srgb, var(--pg-accent) 55%, var(--sn-text));
+  --sn-accent-soft: color-mix(in srgb, var(--pg-accent) 16%, transparent);
+  --sn-accent-soft-strong: color-mix(in srgb, var(--pg-accent) 28%, transparent);
+  --sn-accent-glow: color-mix(in srgb, var(--pg-accent) 42%, transparent);
+  --sn-focus-ring: color-mix(in srgb, var(--pg-accent) 55%, transparent);
 }
 
 .log h2 {
@@ -174,9 +218,32 @@ body {
 .log code {
   font-size: 12px;
   color: #ff6b90;
+  overflow-wrap: anywhere;
 }
 
 .log li span {
   font-size: 12.5px;
   color: var(--page-muted);
+}
+
+/* Phone widths: the padding of the page and the panel is what the widget would
+   otherwise have to compete with. The card keeps its own 14px inset. */
+@media (max-width: 560px) {
+  .page {
+    padding: 28px 16px 56px;
+  }
+
+  .page__header {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .page__header h1 {
+    font-size: 21px;
+  }
+
+  .surface {
+    padding: 20px 12px;
+    border-radius: 18px;
+  }
 }

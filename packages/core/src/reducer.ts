@@ -38,8 +38,8 @@ import type {
  * A failure the player has to show, tagged with the phase that produced it.
  *
  * `message` is the raw text an adapter or an engine gave — it may be empty when
- * only a code was reported — and the binding renders `messages.genericError` (or
- * the copy that matches `code`) rather than trusting it.
+ * only a code was reported — and the binding renders the view's `errorMessage`
+ * (the copy that matches `phase`) rather than trusting it.
  */
 export interface PlayerError {
   code: PlaybackErrorCode;

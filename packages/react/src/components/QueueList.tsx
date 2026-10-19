@@ -1,6 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import { format, type QueueView } from '@nickkupriyanov/soundline-core';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react';
+import { cx, format, type QueueItemView, type QueueView } from '@nickkupriyanov/soundline-core';
 import { useClassNames, useComponents, useUI } from '../context';
+import { useExitingRows } from '../hooks/useExitingRows';
 
 /** Everything the list needs to render and drive the playlist. */
 export interface QueueListProps {
@@ -35,6 +43,12 @@ export interface QueueListProps {
  * the active track, then to the first row, and a removal takes the focus along
  * instead of dropping it on `<body>`.
  *
+ * A removed row is not dropped at once: it is held for the length of its exit
+ * (`useExitingRows`), marked `data-sn-exiting` so the animation kit can fade it
+ * out, and hidden from the assistive tree and the tab order while it goes. Only a
+ * removal asked for here is held — a playlist switch, a shuffle or a queue the
+ * application replaced are instant.
+ *
  * This component is the library's own half of the queue, not a part: the rows it
  * builds are the `TrackItem` part, and every contract that must survive a
  * replacement — the tab order, the arrows, the click that must not select, the
@@ -49,6 +63,8 @@ export function QueueList({ queue, onSelect, onRemove }: QueueListProps) {
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
   const { items } = queue;
+  const { exiting, markLeaving, exitDurationMs } = useExitingRows(items);
+
   const holds = (id: string | null): id is string =>
     id !== null && items.some((row) => row.id === id);
   const focusId = holds(focusedId)
@@ -128,47 +144,86 @@ export function QueueList({ queue, onSelect, onRemove }: QueueListProps) {
     if (target !== null && target !== track) focusItem(target);
   };
 
-  return (
-    <ul className={cls('queueList')} aria-label={queue.label}>
-      {items.map((item) => (
-        <TrackItem
-          key={item.id}
-          item={item}
-          slotProps={{
-            ref: registerRow(item.id),
-            'data-sn-track-id': item.id,
-            className: cls(
-              'trackItem',
-              item.isActive && 'trackItemActive',
-              item.isPlaying && 'trackItemPlaying',
-            ),
-          }}
-          selectProps={{
-            type: 'button',
-            ref: registerSelect(item.id),
-            className: cls('trackSelect'),
-            'aria-label': item.label,
-            'aria-current': item.isActive ? 'true' : undefined,
-            tabIndex: item.id === focusId ? 0 : -1,
-            onClick: () => onSelect(item.id),
-            onFocus: () => setFocusedId(item.id),
-            onKeyDown: (event) => onKeyDown(event, item.id),
-          }}
-          removeProps={{
-            type: 'button',
-            className: cls('trackRemove'),
-            'aria-label': format(messages.removeTrackLabel, { title: item.title }),
-            onClick: () => {
+  /**
+   * A row, in or on its way out.
+   *
+   * A leaving row is the same element drawn the same way — the exit is a
+   * transition on it, not a second kind of row — but it is inert: `data-sn-exiting`
+   * is what the animation layer sees, `aria-hidden` takes it out of the
+   * assistive tree, and both buttons leave the tab order and lose their
+   * handlers, so nothing can be activated in the moment it is disappearing.
+   */
+  const renderRow = (item: QueueItemView, leaving: boolean) => (
+    <TrackItem
+      key={item.id}
+      item={item}
+      slotProps={{
+        ...(leaving
+          ? { 'data-sn-exiting': 'true', 'aria-hidden': 'true' }
+          : { ref: registerRow(item.id) }),
+        'data-sn-track-id': item.id,
+        // The state classes are slots too: each one has to go through `cls`, or a
+        // consumer's `classNames.trackItemActive`/`trackItemPlaying` never reaches
+        // the DOM. `cx` joins the resolved slots without repeating the base class.
+        className: cx(
+          cls('trackItem'),
+          item.isActive && cls('trackItemActive'),
+          item.isPlaying && cls('trackItemPlaying'),
+        ),
+        ...(leaving
+          ? { style: { '--sn-exit-duration': `${exitDurationMs}ms` } as CSSProperties }
+          : null),
+      }}
+      selectProps={{
+        type: 'button',
+        ...(leaving ? null : { ref: registerSelect(item.id) }),
+        className: cls('trackSelect'),
+        'aria-label': item.label,
+        'aria-current': !leaving && item.isActive ? 'true' : undefined,
+        tabIndex: leaving ? -1 : item.id === focusId ? 0 : -1,
+        onClick: leaving ? undefined : () => onSelect(item.id),
+        onFocus: leaving ? undefined : () => setFocusedId(item.id),
+        onKeyDown: leaving ? undefined : (event) => onKeyDown(event, item.id),
+      }}
+      removeProps={{
+        type: 'button',
+        className: cls('trackRemove'),
+        'aria-label': format(messages.removeTrackLabel, { title: item.title }),
+        ...(leaving ? { tabIndex: -1 } : null),
+        onClick: leaving
+          ? undefined
+          : () => {
               // Asked before the removal, while the row is still in the document.
               const row = rowRefs.current.get(item.id);
               const active = typeof document === 'undefined' ? null : document.activeElement;
               focusedRowRemoved.current = Boolean(row && active && row.contains(active));
-              // Removing is deliberately not a selection.
+              // The row leaves with its transition rather than at once; removing
+              // is deliberately not a selection.
+              markLeaving(item.id);
               onRemove(item.id);
             },
-          }}
-        />
-      ))}
+      }}
+    />
+  );
+
+  /**
+   * The rows to render, in order: the list as it is, with the rows on their way
+   * out put back where they were.
+   *
+   * A leaving row keeps the place it left — `position` is the one it had when it
+   * was removed — so a row removed from the middle of the list does not have the
+   * rows below jump up before its exit is over.
+   */
+  const sequence: Array<readonly [QueueItemView, boolean]> = items.map(
+    (item): readonly [QueueItemView, boolean] => [item, false],
+  );
+  for (const ghost of [...exiting].sort((a, b) => a.position - b.position)) {
+    sequence.splice(Math.min(Math.max(ghost.position - 1, 0), sequence.length), 0, [ghost, true]);
+  }
+
+  return (
+    <ul className={cls('queueList')} aria-label={queue.label}>
+      {sequence.map(([item, leaving]) => renderRow(item, leaving))}
     </ul>
   );
 }

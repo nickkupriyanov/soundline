@@ -4,7 +4,20 @@ import type { ComponentPropsWithoutRef } from 'react';
  * The icons the widget draws: transport, volume and the queue's remove button.
  * Every icon is decorative (`aria-hidden`) and takes its colour from
  * `currentColor`; the accessible name always comes from the control's label.
+ *
+ * The two repeat icons are the Tabler outline icons (MIT), copied in as local
+ * SVG so the package takes no runtime dependency. See
+ * `THIRD-PARTY-LICENSES.md` for the attribution and the licence text.
  */
+
+/** Tabler draws its outline icons on a 24-unit grid with 2-unit strokes. */
+const TABLER = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+} as const;
 
 function Icon({ children, ...props }: ComponentPropsWithoutRef<'svg'>) {
   return (
@@ -70,48 +83,26 @@ export function ShuffleIcon(props: ComponentPropsWithoutRef<'svg'>) {
   );
 }
 
-/** The loop both repeat modes draw; the "track" mode adds a `1` on top. */
-function repeatLoop() {
+/**
+ * Tabler's `repeat`: a loop that repeats the playlist. The 20px box and 2-unit
+ * strokes match `ShuffleIcon` and the other transport glyphs.
+ */
+export function RepeatIcon(props: ComponentPropsWithoutRef<'svg'>) {
   return (
-    <>
-      <path
-        d="M6 7h12M18 7v4a5 5 0 0 1-5 5H6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M15 4l3 3-3 3M9 13l-3 3 3 3"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </>
+    <Icon {...props}>
+      <path d="M4 12v-3a3 3 0 0 1 3-3h13m-3-3 3 3-3 3" {...TABLER} />
+      <path d="M20 12v3a3 3 0 0 1-3 3H4m3 3-3-3 3-3" {...TABLER} />
+    </Icon>
   );
 }
 
-/** The loop that repeats the playlist. */
-export function RepeatIcon(props: ComponentPropsWithoutRef<'svg'>) {
-  return <Icon {...props}>{repeatLoop()}</Icon>;
-}
-
-/** The same loop with a `1` inside: the repeat button in its "track" mode. */
+/** Tabler's `repeat-once`: the same loop with the `1` inside it. */
 export function RepeatOneIcon(props: ComponentPropsWithoutRef<'svg'>) {
   return (
     <Icon {...props}>
-      {repeatLoop()}
-      <path
-        d="M12 15.2V8.6l-1.7 1.1"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M4 12v-3a3 3 0 0 1 3-3h13m-3-3 3 3-3 3" {...TABLER} />
+      <path d="M20 12v3a3 3 0 0 1-3 3H4m3 3-3-3 3-3" {...TABLER} />
+      <path d="m11 11 1-1v4" {...TABLER} />
     </Icon>
   );
 }

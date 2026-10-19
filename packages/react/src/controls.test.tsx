@@ -66,7 +66,7 @@ describe('the now-playing row', () => {
 
     // Nothing has been loaded yet, but the bar already describes the whole track.
     expect(screen.getByText('0:00')).toBeInTheDocument();
-    expect(screen.getByText('1:40')).toBeInTheDocument();
+    expect(screen.getByText('1:40', { selector: '.sn-total-time' })).toBeInTheDocument();
     expect(slider).toHaveAttribute('aria-valuemin', '0');
     expect(slider).toHaveAttribute('aria-valuemax', '100');
     expect(slider).toHaveAttribute('aria-valuenow', '0');
@@ -185,6 +185,27 @@ describe('the transport', () => {
       'aria-pressed',
       'false',
     );
+  });
+
+  it('draws the shared-family repeat icons at the transport size', async () => {
+    const user = userEvent.setup();
+    renderPlayer();
+    await reachSlider();
+
+    const icon = (): SVGElement =>
+      screen.getByRole('button', { name: /^Repeat/ }).querySelector('svg') as SVGElement;
+    expect(icon()).toHaveAttribute('width', '20');
+    expect(icon()).toHaveAttribute('height', '20');
+    // The playlist loop has the Tabler family's two paths; only the "one" mode
+    // adds the third, and that is the readable marker for a single track.
+    expect(icon().querySelectorAll('path')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'Repeat off' }));
+    expect(icon().querySelectorAll('path')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'Repeat playlist' }));
+    expect(icon().querySelectorAll('path')).toHaveLength(3);
+    expect(icon().querySelector('path:last-of-type')).toHaveAttribute('d', 'm11 11 1-1v4');
   });
 });
 

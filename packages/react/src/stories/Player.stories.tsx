@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { createMockAdapter, type SoundlineTheme } from '../index';
+import { createMockAdapter, type SoundlineTheme, type Track } from '../index';
 import { motionAnimations } from '../motion';
 import { DemoPlayer, demoTracks } from './demo';
 
@@ -63,7 +63,108 @@ const meta: Meta<typeof DemoPlayer> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+/** A playlist that stresses the two text columns and the duration feedback. */
+const longTracks: Track[] = [
+  {
+    id: 'long-title',
+    title: 'A Very Long Track Title That Keeps Going Long After the Row Has Run Out of Room',
+    artist: 'An Artist Name That Is Also Long Enough to Need an Ellipsis',
+    album: 'A Record With a Long Name',
+    duration: 587,
+    src: 'https://cdn.soundline.test/long-title.mp3',
+  },
+  {
+    id: 'no-duration',
+    title: 'No Duration Was Reported',
+    artist: 'The Adapter Decides',
+    src: 'https://cdn.soundline.test/no-duration.mp3',
+  },
+  {
+    id: 'short',
+    title: 'Short',
+    artist: 'Brief',
+    duration: 42,
+    src: 'https://cdn.soundline.test/short.mp3',
+  },
+];
+
 export const Default: Story = {};
+
+export const LongTitles: Story = {
+  name: 'Long titles — the row keeps its columns',
+  args: { adapter: createMockAdapter({ tracks: longTracks }) },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The title is clipped, the artist is clipped and the duration keeps its own column, so neither the remove button nor the time is pushed out of the row.',
+      },
+    },
+  },
+};
+
+export const UnknownDuration: Story = {
+  name: 'Unknown duration — an empty time column',
+  args: {
+    adapter: createMockAdapter({
+      tracks: longTracks.filter((track) => track.id === 'long-title' || track.id === 'no-duration'),
+    }),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The adapter did not report a duration for the second track. The column stays reserved and empty — the widget never fetches a duration of its own.',
+      },
+    },
+  },
+};
+
+export const RepeatOff: Story = {
+  name: 'Repeat — off',
+  args: { defaultLoop: 'off' },
+};
+
+export const RepeatAll: Story = {
+  name: 'Repeat — playlist',
+  args: { defaultLoop: 'all' },
+};
+
+export const RepeatOne: Story = {
+  name: 'Repeat — single track',
+  args: { defaultLoop: 'one' },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The third mode draws the same Tabler loop with a `1` inside it; the pressed state and the label are the same on all three variants.',
+      },
+    },
+  },
+};
+
+export const VolumeZero: Story = {
+  name: 'Volume — 0%',
+  args: { defaultVolume: 0 },
+};
+
+export const VolumeOnePercent: Story = {
+  name: 'Volume — 1%',
+  args: { defaultVolume: 0.01 },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'At 1% the thumb sits just inside the left end of the track, the readout says `1%`, and the ends are not a dead zone.',
+      },
+    },
+  },
+};
+
+export const VolumeFull: Story = {
+  name: 'Volume — 100%',
+  args: { defaultVolume: 1 },
+};
 
 export const Russian: Story = {
   args: { locale: 'ru' },

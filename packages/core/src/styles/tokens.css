@@ -27,14 +27,46 @@
    */
   --sn-width: 380px;
   --sn-width-compact: 300px;
+  /*
+   * The artwork's base size. The layout rules in `soundline.css` pick the value
+   * per composition: 72px by default, 88px in a full card at a container of
+   * 340px or wider, and 64px in the compact layout. A consumer that retunes the
+   * composition should override the same rules (or the token per layout), not
+   * only the base value.
+   */
+  --sn-artwork-size: 72px;
+  /*
+   * The cap of the volume row. Its visible pair — a 32px mute button, an 8px
+   * gap and a 124px slider — is centred inside it; the percentage is an absolute
+   * hint beside the slider, outside the flow, so it never counts towards this
+   * width or pushes the pair off centre.
+   */
+  --sn-volume-width: 208px;
   /* The vertical rhythm of the card: the gap between its blocks, reused by the
      wrapper the height animation adds. */
   --sn-card-gap: 12px;
   /* How many tracks are visible before the queue scrolls. */
   --sn-queue-max-height: 320px;
+  /*
+   * The height of the queue's bottom fade. It is also the list's bottom padding:
+   * at the end of the scroll the last row sits above the faded strip, so only the
+   * padding is ever dimmed once there is nothing left to scroll.
+   */
+  --sn-queue-fade: 20px;
+  /*
+   * The height a removing row collapses from. It is a cap, not a measurement:
+   * a row taller than it still fades, it just collapses from this value.
+   */
+  --sn-row-max-height: 3.5rem;
   /* The track and its handle: the whole bar, then the filled part. */
   --sn-seek-height: 6px;
   --sn-seek-fill: var(--sn-accent);
+  /*
+   * The empty part of a slider. It is its own token, not the control fill:
+   * `--sn-control` is the card's surface in the light theme, and an empty seek
+   * or volume track painted with it disappeared into the card.
+   */
+  --sn-track: #2a2a35;
 
   /* Type ------------------------------------------------------------------- */
   --sn-font-family:
@@ -62,7 +94,12 @@
   /* Text */
   --sn-text: #f4f4f6;
   --sn-text-muted: #a2a2b0;
-  --sn-text-subtle: #71717f;
+  /*
+   * Captions, 12–12.5px: WCAG AA wants 4.5:1 for text this size, and this one is
+   * measured against the darkest surface it lands on — a playing row's tinted
+   * background, not just the card. Keep it at or above that when retuning.
+   */
+  --sn-text-subtle: #9292a0;
   --sn-ink: #f4f4f6;
   --sn-ink-contrast: #16161a;
 
@@ -83,6 +120,12 @@
 
   /* Feedback */
   --sn-danger: #ff6178;
+  /*
+   * Text on `--sn-danger`. The danger fill is light in the dark theme, so white
+   * text on it measured 2.9:1; the dark ink is 6.32:1. The light theme keeps
+   * white on its darker fill (4.67:1).
+   */
+  --sn-danger-contrast: #141419;
   --sn-danger-ink: #ffc2cb;
   --sn-danger-soft: rgba(255, 97, 120, 0.14);
 
@@ -105,10 +148,19 @@
   --sn-panel: #ffffff;
   --sn-control: #f4f4f6;
   --sn-control-hover: #ececef;
+  /* Dark enough to read as a bar on the light card, and still lighter than the
+     buffered part (`--sn-border-strong`) laid over it. */
+  --sn-track: #d4d4db;
 
   --sn-text: #171719;
-  --sn-text-muted: #7e7e8a;
-  --sn-text-subtle: #adadb8;
+  /*
+   * Both greys are darker than they look like they should be: on a light card a
+   * mid grey that "reads" as secondary drops below 4.5:1. These are the lightest
+   * values that still pass for 12–12.5px captions on every surface they land on,
+   * the pink playing-row tint included. `styles.test.ts` measures them.
+   */
+  --sn-text-muted: #54545e;
+  --sn-text-subtle: #66666f;
   --sn-ink: #171719;
   --sn-ink-contrast: #ffffff;
 
@@ -126,6 +178,7 @@
   --sn-accent-glow: rgba(255, 33, 90, 0.35);
 
   --sn-danger: #e0243f;
+  --sn-danger-contrast: #ffffff;
   --sn-danger-ink: #a3102a;
   --sn-danger-soft: #fde8ec;
 

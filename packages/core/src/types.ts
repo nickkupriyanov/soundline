@@ -219,6 +219,14 @@ export interface SoundlineMessages {
   errorLabel: string;
   /** Fallback description of a failed load. */
   genericError: string;
+  /**
+   * Description of a track list that could not be fetched.
+   *
+   * A failed list is not a failed track, so the copy names the playlist: the
+   * error state and the live region say what actually happened instead of
+   * blaming a track nobody tried to play.
+   */
+  queueError: string;
   retryLabel: string;
   /** Announced when the queue finished playing. */
   endedLabel: string;
@@ -248,6 +256,8 @@ export type SnClassSlot =
   | 'title'
   | 'artist'
   | 'album'
+  | 'progress'
+  | 'controls'
   | 'transport'
   | 'playButton'
   | 'previousButton'
@@ -266,8 +276,8 @@ export type SnClassSlot =
   | 'volumeButton'
   | 'volumeSlider'
   | 'volumeThumb'
+  | 'volumeValue'
   | 'queue'
-  | 'queueHeader'
   | 'queueCount'
   | 'queueList'
   | 'trackItem'
@@ -278,6 +288,7 @@ export type SnClassSlot =
   | 'eq'
   | 'trackTitle'
   | 'trackArtist'
+  | 'trackDuration'
   | 'trackRemove'
   | 'loading'
   | 'empty'

@@ -164,12 +164,16 @@ export interface SeekBarPartProps {
  * As with the playhead, the drag and the keyboard come prepared; moving either
  * the slider or the button is the only thing a replacement decides. The level
  * and the mute flag are two separate values, so muting never loses the level, and
- * touching the slider lifts the mute.
+ * touching the slider lifts the mute. The default row also draws the percentage
+ * as visual feedback; that span is not a control and not a tab stop.
  */
 export interface VolumePartProps {
   /** The volume as the flow derived it: level, mute flag and labels. */
   view: VolumeView;
-  /** `0..100` of the level on screen — follows a drag. */
+  /**
+   * `0..100` of the level on screen, rounded — it follows a drag before the
+   * level is committed. The slider's `aria-valuetext` speaks the same value.
+   */
   percent: number;
   /** Spread on your own container: the `sn-volume` slot class lives here. */
   slotProps: SlotProps<ComponentPropsWithoutRef<'div'>>;
@@ -201,14 +205,24 @@ export interface VolumePartProps {
  * stagger does the same (`useAnimations()`). `selectProps` owns the roving tab
  * order, so the button that selects must be the element the library's own row has
  * — a replacement that drops it loses the keyboard walk as well as the selection.
+ *
+ * The default row draws `item.durationLabel` in a stable column inside the
+ * selecting button and always reserves the equalizer's width; a replacement may
+ * draw neither, but should keep that column reserved if it wants the title not to
+ * move when playback starts.
  */
 export interface TrackItemPartProps {
-  /** The row as the flow derived it: labels, position and state flags. */
+  /** The row as the flow derived it: labels, duration, position and state flags. */
   item: QueueItemView;
   /**
    * Spread on your own row element (an `<li>`): the slot classes and the item id.
    * The library uses the same bundle's `ref` to tell whether a removal is taking
    * the focus away with it.
+   *
+   * A row on its way out — the library holds it for the length of its exit — also
+   * arrives with `data-sn-exiting="true"` (what the animation layer animates) and
+   * `aria-hidden="true"`. Keep both: spreading the bundle is all a row needs to be
+   * skipped by a screen reader while it leaves.
    */
   slotProps: SlotProps<ComponentPropsWithRef<'li'>>;
   /**

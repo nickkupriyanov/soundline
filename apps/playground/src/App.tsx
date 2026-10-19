@@ -9,42 +9,21 @@ import { motionAnimations } from '@nickkupriyanov/soundline-react/motion';
 import { DemoPlayer, demoTracks, type DemoPlayback } from './demo';
 import '@nickkupriyanov/soundline-react/styles.css';
 
-/** Custom properties are not part of `CSSProperties`, so they get their own helper. */
-const cssVars = (vars: Record<string, string>): CSSProperties => vars as CSSProperties;
-
+/**
+ * The accent presets: a hue and the ink that reads on it.
+ *
+ * Only these two values travel inline. The rest of the accent family — hover,
+ * press, the soft tints, the focus ring and the ink used on card surfaces — is
+ * derived from the hue in `app.css`, against the theme that is actually on, so
+ * one preset works in the light and the dark theme instead of carrying one
+ * theme's tuned colours into the other.
+ */
 const ACCENTS = {
-  default: cssVars({}),
-  violet: cssVars({
-    '--sn-accent': '#7c5cff',
-    '--sn-accent-hover': '#8f74ff',
-    '--sn-accent-press': '#6a49f0',
-    '--sn-accent-ink': '#ab9dff',
-    '--sn-accent-soft': 'rgba(124, 92, 255, 0.18)',
-    '--sn-accent-soft-strong': 'rgba(124, 92, 255, 0.3)',
-    '--sn-accent-glow': 'rgba(124, 92, 255, 0.45)',
-    '--sn-focus-ring': 'rgba(124, 92, 255, 0.6)',
-  }),
-  emerald: cssVars({
-    '--sn-accent': '#16c98d',
-    '--sn-accent-hover': '#1fdc9c',
-    '--sn-accent-press': '#10ac77',
-    '--sn-accent-ink': '#4fe0b0',
-    '--sn-accent-soft': 'rgba(22, 201, 141, 0.16)',
-    '--sn-accent-soft-strong': 'rgba(22, 201, 141, 0.28)',
-    '--sn-accent-glow': 'rgba(22, 201, 141, 0.4)',
-    '--sn-focus-ring': 'rgba(22, 201, 141, 0.55)',
-  }),
-  mono: cssVars({
-    '--sn-accent': '#8b8b96',
-    '--sn-accent-hover': '#9d9daa',
-    '--sn-accent-press': '#74747f',
-    '--sn-accent-ink': '#cfcfd6',
-    '--sn-accent-soft': 'rgba(255, 255, 255, 0.08)',
-    '--sn-accent-soft-strong': 'rgba(255, 255, 255, 0.14)',
-    '--sn-accent-glow': 'rgba(0, 0, 0, 0)',
-    '--sn-focus-ring': 'rgba(255, 255, 255, 0.4)',
-  }),
-} satisfies Record<string, CSSProperties>;
+  default: { accent: '#ff215a', contrast: '#ffffff' },
+  violet: { accent: '#7c5cff', contrast: '#ffffff' },
+  emerald: { accent: '#16c98d', contrast: '#06251a' },
+  mono: { accent: '#8b8b96', contrast: '#171719' },
+} satisfies Record<string, { accent: string; contrast: string }>;
 
 interface LogEntry {
   id: number;
@@ -177,7 +156,16 @@ export function App() {
 
       <main className="page__main">
         <div className="surface">
-          <div className="surface__widget" style={ACCENTS[accent]}>
+          <div
+            className="surface__widget"
+            {...(accent === 'default' ? {} : { 'data-accent': accent })}
+            style={
+              {
+                '--pg-accent': ACCENTS[accent].accent,
+                '--pg-accent-contrast': ACCENTS[accent].contrast,
+              } as CSSProperties
+            }
+          >
             <DemoPlayer
               adapter={adapter}
               theme={theme}

@@ -24,6 +24,15 @@ import type { SlotProps } from '../parts';
 /** How far `PageUp`/`PageDown` travel, in multiples of the step. */
 export const PAGE_FACTOR = 10;
 
+/**
+ * How far the volume slider's visual track sits from the edges of its box.
+ *
+ * The thumb is 14px and the track is shorter than the box by this amount on each
+ * side, so the circle fits at 0% and 100% instead of hanging over the ends. The
+ * pointer maths reads the same number; see `useSlider`'s `trackInset`.
+ */
+export const VOLUME_TRACK_INSET = 7;
+
 /** The `aria` values of a slider, in the units it speaks (`1:23 of 4:05`, `70%`). */
 export interface SliderAria {
   min: number;
@@ -52,6 +61,15 @@ export interface UseSliderOptions {
   /** Commits a value: at once on a key press, on release during a drag. */
   onChange(value: number): void;
   pageFactor?: number;
+  /**
+   * How far the visual track is inset from the element's edges, in pixels.
+   *
+   * The pointer is mapped onto the same inset span, so the ends of the track are
+   * exactly the ends of the value range: a press on the visible start reads
+   * `min`, a press on the visible end reads `max`, and neither jumps. Default:
+   * `0` (the element's whole box is the track).
+   */
+  trackInset?: number;
 }
 
 export interface SliderControls {
@@ -82,6 +100,7 @@ export function useSlider(options: UseSliderOptions): SliderControls {
     style,
     onChange,
     pageFactor = PAGE_FACTOR,
+    trackInset = 0,
   } = options;
 
   const [dragValue, setDragValue] = useState<number | null>(null);
@@ -93,10 +112,14 @@ export function useSlider(options: UseSliderOptions): SliderControls {
   const positionAt = useCallback(
     (clientX: number, element: HTMLElement): number => {
       const rect = element.getBoundingClientRect();
-      if (rect.width <= 0 || max <= min) return min;
-      return clamp(((clientX - rect.left) / rect.width) * (max - min) + min, min, max);
+      // A track that is inset by more than its own half-width would otherwise
+      // divide by zero; fall back to the range's start.
+      const inset = Math.min(Math.max(trackInset, 0), rect.width / 2);
+      const width = rect.width - inset * 2;
+      if (width <= 0 || max <= min) return min;
+      return clamp(((clientX - rect.left - inset) / width) * (max - min) + min, min, max);
     },
-    [max, min],
+    [max, min, trackInset],
   );
 
   const commit = useCallback(

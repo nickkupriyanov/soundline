@@ -48,7 +48,14 @@ export interface PlaybackEngine {
    * policy blocked it.
    */
   play(): Promise<void>;
-  /** Stops playback, keeping the playhead. */
+  /**
+   * Stops playback, keeping the playhead.
+   *
+   * The controller may call it while the status is `loading`: a stall is
+   * playback in intent, and a pause has to reach it. An implementation with
+   * nothing actually playing must treat the call as a no-op — in particular, it
+   * must not turn a source that is still being fetched into `paused`.
+   */
   pause(): void;
   /** Moves the playhead to `seconds`, clamped to the known duration. */
   seek(seconds: number): void;
@@ -131,7 +138,10 @@ function bufferedAhead(element: HTMLAudioElement): number {
  * The element is created on first use, so constructing the engine is free and
  * running it on the server is safe until something actually loads. Media events
  * are translated into the telemetry contract: `loadedmetadata`, `durationchange`,
- * `timeupdate`, `progress`, `play`, `pause`, `waiting`, `ended` and `error`.
+ * `timeupdate`, `progress`, `play`, `playing`, `pause`, `waiting`, `ended` and
+ * `error`. `playing` is not a duplicate of `play`: after a stall reports
+ * `waiting`, resumed playback only says `playing`, and without that listener the
+ * widget would stay on its loading block while the audio runs.
  */
 export function createMediaEngine(options: MediaEngineOptions = {}): PlaybackEngine {
   const listeners = new Set<() => void>();
@@ -171,6 +181,11 @@ export function createMediaEngine(options: MediaEngineOptions = {}): PlaybackEng
     created.addEventListener('timeupdate', () => sync());
     created.addEventListener('progress', () => sync());
     created.addEventListener('play', () => sync('playing'));
+    created.addEventListener('playing', () => {
+      // The element may have been paused while it was starving; a late
+      // `playing` must not claim playback the element no longer has.
+      if (!created.paused) sync('playing');
+    });
     created.addEventListener('pause', () => sync('paused'));
     created.addEventListener('waiting', () => sync('loading'));
     created.addEventListener('ended', () => {
@@ -240,8 +255,16 @@ export function createMediaEngine(options: MediaEngineOptions = {}): PlaybackEng
 
   function pause(): void {
     if (!element) return;
+    /*
+     * Two cases reach here while the status is `loading`: audio that ran dry
+     * (`waiting`, element still playing in intent) and a source whose metadata
+     * has not arrived (element already paused). Only the first one has something
+     * to pause; calling `pause()` on the second would claim a state the engine
+     * never had and reset the loading status the controller is waiting on.
+     */
+    if (element.paused) return;
     element.pause();
-    if (state.status === 'playing') state.status = 'paused';
+    if (state.status === 'playing' || state.status === 'loading') state.status = 'paused';
     notify();
   }
 
