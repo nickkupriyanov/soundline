@@ -1,6 +1,6 @@
 {
   "name": "@nickkupriyanov/soundline-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-free core of Soundline: the player controller, the derived view model, the reducer, the playback engine and track source contracts, copy and stable class names.",
   "keywords": [
     "audio",
